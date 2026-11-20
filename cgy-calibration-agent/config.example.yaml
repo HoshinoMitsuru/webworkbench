@@ -1,0 +1,33 @@
+# 校准引擎 · 比赛 Agent 配置样例
+# 复制为 config.yaml 后按需修改；所有数值都有缺省值，缺字段不报错。
+
+agent:
+  max_steps: 12            # 自主循环步数硬上限（含 LLM 决策步）
+  max_wall_clock_s: 120    # 墙钟上限（秒），到点强制停止
+  token_budget: 8000       # 估算 token 预算，超预算停止（避免成本失控）
+  max_no_progress: 3       # 连续 N 步无任何有效工具执行 -> 判定卡死并停止
+  max_repeat: 3            # 同一 (工具+参数) 调用超过 N 次 -> 判定死循环并拦截
+
+llm:
+  provider: mock           # mock | openai（比赛接真模型时改 openai）
+  model: gpt-4o-mini
+  base_url: https://api.openai.com/v1
+  api_key_env: OPENAI_API_KEY   # 从环境变量读，禁止硬编码
+  timeout_s: 30            # 单次 LLM 调用超时（秒）
+  retries: 2               # 重试次数
+  backoff_s: 2.0           # 基础退避（秒），实际 = backoff * 2^attempt + 抖动
+
+tool:
+  timeout_s: 20            # 单次工具（平台 CLI）调用超时（秒）
+  retries: 2
+
+# 平台开发者 CLI 适配：每个平台可配 stats / posts 命令模板。
+# 变量占位：{account} {period} {limit}，运行时替换；stdout 须为 JSON。
+platforms:
+  devto:
+    stats_cmd: "devto stats --user {account} --period {period}"
+    posts_cmd: "devto posts --user {account} --limit {limit}"
+  hashnode:
+    stats_cmd: "hashnode stats --publication {account} --days {period}"
+    posts_cmd: "hashnode posts --publication {account} --limit {limit}"
+  # 其余平台（medium/wechat/xiaohongshu/zhihu/bilibili 等）按同结构补充即可。

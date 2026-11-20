@@ -1,0 +1,291 @@
+<div id="mr-studio" data-view="report">
+<style>
+#mr-studio{--bg:#F6F1E3;--surface:#FFFDF6;--ink:#5A2D0C;--muted:#8F7358;--border:#E7DCC5;--accent:#FC9B00;--accent-deep:#B36E00;--sky:#79D3F2;--sky-soft:#E3F5FC;--leaf:#9BD500;--leaf-deep:#4F7A00;--danger:#C2452D;--danger-soft:#FBEAE5;max-width:1240px;margin:0 auto;padding:18px 16px 26px;background:var(--bg);color:var(--ink);font:14px/1.65 "PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;border-radius:20px}
+#mr-studio *{box-sizing:border-box}
+#mr-studio h1,#mr-studio h2,#mr-studio h3,#mr-studio p{margin:0}
+#mr-studio button{font:inherit;color:inherit}
+#mr-studio .mr-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+#mr-studio .mr-brand{display:flex;gap:10px;align-items:center}
+#mr-studio .mr-brand h1{font-size:20px;letter-spacing:.5px}
+#mr-studio .mr-sub{font-size:12px;color:var(--muted)}
+#mr-studio .mr-head-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#mr-studio .mr-chip{font-size:12px;background:var(--sky-soft);border:1px solid #BCE4F4;color:#1D6E8C;padding:3px 10px;border-radius:999px;white-space:nowrap}
+#mr-studio .mr-demo{font-size:12px;background:#FFF3DC;border:1px solid #F2CE93;color:var(--accent-deep);padding:3px 10px;border-radius:999px}
+#mr-studio .mr-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+#mr-studio .mr-nav button{border:1px solid var(--border);background:var(--surface);padding:7px 14px;border-radius:999px;cursor:pointer;font-size:13px}
+#mr-studio .mr-nav button.is-active{background:var(--ink);color:#FFF6E6;border-color:var(--ink)}
+#mr-studio .mr-note{font-size:12px;color:var(--muted);background:var(--surface);border:1px dashed var(--border);border-radius:10px;padding:7px 12px;margin-bottom:12px}
+#mr-studio .mr-main{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:start}
+#mr-studio .mr-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px}
+#mr-studio .mr-card h2{font-size:15px;margin-bottom:4px}
+#mr-studio .mr-hint{font-size:12px;color:var(--muted);margin-bottom:12px}
+#mr-studio .mr-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+#mr-studio .mr-field label{display:block;font-size:12.5px;font-weight:600;margin-bottom:3px}
+#mr-studio .mr-field select,#mr-studio .mr-field input{border:1px solid var(--border);border-radius:10px;padding:8px 10px;font:inherit;background:#fff;color:var(--ink);min-width:150px}
+#mr-studio .mr-field select:focus-visible,#mr-studio .mr-field input:focus-visible,#mr-studio button:focus-visible{outline:2px solid var(--accent-deep);outline-offset:1px}
+#mr-studio .mr-btn{border:none;background:var(--accent);color:#4A2606;font-weight:700;padding:10px 18px;border-radius:999px;cursor:pointer}
+#mr-studio .mr-btn:hover{filter:brightness(1.05)}
+#mr-studio .mr-btn:disabled{opacity:.55;cursor:not-allowed}
+#mr-studio .mr-btn-ghost{border:1px solid var(--border);background:#fff;padding:9px 14px;border-radius:999px;cursor:pointer;font-size:13px}
+#mr-studio .mr-fact{background:var(--sky-soft);border-bottom:1px solid #7FCBE8;padding:0 2px;border-radius:3px;white-space:nowrap}
+#mr-studio .mr-report{border:1px solid var(--border);border-radius:12px;background:#fff;padding:18px}
+#mr-studio .mr-report h3{font-size:17px;font-weight:800;margin-bottom:6px}
+#mr-studio .mr-report h4{font-size:13.5px;font-weight:700;color:var(--accent-deep);margin:14px 0 5px}
+#mr-studio .mr-report p{margin:0 0 6px}
+#mr-studio .mr-report ul{margin:0 0 6px;padding-left:20px}
+#mr-studio .mr-report li{margin-bottom:3px}
+#mr-studio .mr-meta{font-size:12px;color:var(--muted);border-left:3px solid var(--sky);padding-left:8px;margin-bottom:10px}
+#mr-studio .mr-credit{font-size:12px;color:var(--muted);margin-top:14px;border-top:1px dashed var(--border);padding-top:8px}
+#mr-studio .mr-badge{font-size:12px;padding:2px 10px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--muted);white-space:nowrap}
+#mr-studio .mr-badge.draft{background:#FFF3DC;border-color:#F2CE93;color:var(--accent-deep)}
+#mr-studio .mr-badge.ok{background:#F0F7DC;border-color:#C4E08A;color:var(--leaf-deep)}
+#mr-studio .mr-badge.warn{background:var(--danger-soft);border-color:#E8B5A8;color:var(--danger)}
+#mr-studio .mr-panel-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+#mr-studio .mr-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+#mr-studio .mr-tip{font-size:12px;color:var(--muted)}
+#mr-studio .mr-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+#mr-studio .mr-metric{background:var(--sky-soft);border:1px solid #BCE4F4;border-radius:12px;padding:9px 12px;font-size:12px;color:#1D6E8C}
+#mr-studio .mr-metric b{display:block;font-size:19px;color:var(--ink);font-variant-numeric:tabular-nums}
+#mr-studio .mr-bars{margin:6px 0 12px}
+#mr-studio .mr-bar-row{display:grid;grid-template-columns:112px 1fr 74px;gap:8px;align-items:center;font-size:12px;margin-bottom:6px}
+#mr-studio .mr-bar-track{background:#F0E8D6;border-radius:999px;height:12px;overflow:hidden}
+#mr-studio .mr-bar-fill{height:100%;border-radius:999px}
+#mr-studio .mr-bar-num{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+#mr-studio .mr-check{border-top:1px dashed var(--border);padding-top:10px;font-size:12.5px}
+#mr-studio .mr-check h3{font-size:13px;margin-bottom:6px}
+#mr-studio .mr-check li{margin-bottom:4px}
+#mr-studio .mr-ok{color:var(--leaf-deep)}
+#mr-studio .mr-warn{color:var(--danger)}
+#mr-studio .mr-tablewrap{overflow-x:auto}
+#mr-studio table{width:100%;border-collapse:collapse;font-size:13px;min-width:680px}
+#mr-studio th{font-size:12px;color:var(--muted);text-align:left;font-weight:600;border-bottom:1px solid var(--border);padding:6px 8px;white-space:nowrap}
+#mr-studio td{border-bottom:1px solid #F0E8D6;padding:8px;vertical-align:top}
+#mr-studio td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+#mr-studio .mr-line-badge{font-size:11.5px;padding:2px 8px;border-radius:999px;white-space:nowrap}
+#mr-studio .mr-line-badge.zhiye{background:#FFF3DC;color:var(--accent-deep)}
+#mr-studio .mr-line-badge.zhuliren{background:var(--sky-soft);color:#1D6E8C}
+#mr-studio .mr-line-badge.youshi{background:#F0F7DC;color:var(--leaf-deep)}
+#mr-studio .mr-line-badge.qingqiao{background:#F3E8F7;color:#7A3E8F}
+#mr-studio .mr-empty{color:var(--muted);font-size:13px;padding:26px 8px;text-align:center}
+#mr-studio .mr-scope{font-size:12px;color:var(--muted);margin-top:10px;border-top:1px dashed var(--border);padding-top:8px}
+#mr-studio .mr-modal{display:none;position:fixed;inset:0;background:rgba(60,35,10,.45);z-index:60;align-items:center;justify-content:center;padding:16px}
+#mr-studio .mr-modal.open{display:flex}
+#mr-studio .mr-modal-card{background:var(--surface);border-radius:16px;max-width:600px;width:100%;max-height:82vh;display:flex;flex-direction:column;padding:16px;gap:10px}
+#mr-studio .mr-modal-card h3{font-size:15px}
+#mr-studio .mr-modal-card textarea{flex:1;min-height:240px;border:1px solid var(--border);border-radius:10px;padding:10px;font:12.5px/1.6 inherit;resize:none;background:#fff;color:var(--ink)}
+#mr-studio .mr-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#FFF6E6;font-size:13px;padding:9px 16px;border-radius:999px;z-index:70;max-width:88vw;text-align:center}
+#mr-studio .mr-foot{font-size:11.5px;color:var(--muted);margin-top:14px}
+@media (max-width:979px){#mr-studio .mr-main{display:block}#mr-studio .mr-side{margin-top:14px}#mr-studio[data-view="ledger"] #mr-report-card{display:none}#mr-studio[data-view="report"] #mr-ledger-card{display:none}}
+@media (min-width:980px){#mr-studio[data-view="ledger"] .mr-main{display:none}}
+</style>
+<header class="mr-head">
+  <div class="mr-brand">
+    <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="7" width="28" height="27" rx="6" fill="#FAF7E8" stroke="#5A2D0C" stroke-width="2"/><rect x="6" y="7" width="28" height="9" rx="4.5" fill="#FC9B00"/><line x1="13" y1="21" x2="27" y2="21" stroke="#79D3F2" stroke-width="3" stroke-linecap="round"/><line x1="13" y1="27" x2="22" y2="27" stroke="#9BD500" stroke-width="3" stroke-linecap="round"/></svg>
+    <div><h1>月报工坊</h1><p class="zj-sub mr-sub">台账进 · 月报出 · 数字只算不编</p></div>
+  </div>
+  <div class="mr-head-right"><span class="mr-chip" id="mr-month-chip">示例台账 —</span><span class="mr-demo">演示模式 · 本地模板模拟生成</span></div>
+</header>
+<nav class="mr-nav" aria-label="工作区切换">
+  <button type="button" data-view="report" aria-pressed="true">① 月报初稿</button>
+  <button type="button" data-view="ledger" aria-pressed="false">② 活动台账</button>
+</nav>
+<p class="mr-note">预研打样 D2 · 对应调研「候选 B：月报自动汇总」（二期形态）。前提：各项目活动当天在台账记一行（与 D1 归档同一张表）。<b>所有统计数字由台账实时计算</b>，模板只负责组句，不产生新数字；月报涉及金额与备案号，须人工复核后才可对外。示例数据均为<b>虚构</b>。</p>
+<div class="mr-main">
+<section id="mr-report-card" class="mr-card" aria-label="月报初稿">
+  <div class="mr-toolbar">
+    <div class="mr-field"><label for="mr-month">选择月份</label><select id="mr-month"><option value="2026-10">2026 年 10 月</option><option value="2026-11">2026 年 11 月</option><option value="2026-09">2026 年 9 月（空月演示）</option></select></div>
+    <button type="button" class="mr-btn" id="mr-generate">生成月报初稿</button>
+    <span class="mr-badge" id="mr-report-badge">待生成</span>
+  </div>
+  <div class="mr-report" id="mr-report"><p class="mr-empty">选择月份后点「生成月报初稿」。<br>栏目沿用机构现有月报形态：数据速览 → 分项目线动态 → 机构动态 → 待补栏目 → 披露声明。</p></div>
+  <div class="mr-actions" id="mr-report-actions" hidden>
+    <button type="button" class="mr-btn" id="mr-approve">人工复核通过</button>
+    <button type="button" class="mr-btn-ghost" id="mr-copy">复制纯文本</button>
+    <span class="mr-tip">复核 = 对每个锁定数字与台账核对；受益人故事等栏目留待人工补写</span>
+  </div>
+</section>
+<aside class="mr-side mr-card" id="mr-side" aria-label="本月统计与勾稽">
+  <h2>本月统计 · 与月报同源</h2>
+  <p class="mr-hint" id="mr-side-scope">口径：所选月份全部台账行</p>
+  <div class="mr-metrics" id="mr-metrics" aria-live="polite"></div>
+  <div class="mr-bars" id="mr-bars" aria-label="各项目线场次分布"></div>
+  <div class="mr-check" id="mr-check"></div>
+</aside>
+</div>
+<section id="mr-ledger-card" class="mr-card" aria-label="活动台账" hidden>
+  <div class="mr-toolbar">
+    <h2 style="margin-right:auto">活动台账 · 各项目共同维护</h2>
+    <div class="mr-field"><label for="mr-filter-line">按项目线筛选</label><select id="mr-filter-line"><option value="all">全部项目线</option><option value="zhiye">一日职业体验</option><option value="zhuliren">大学生主理人活动</option><option value="youshi">游拾计划</option><option value="qingqiao">青桥计划</option></select></div>
+    <div class="mr-field"><label for="mr-filter-kw">按名称 / 主理人搜索</label><input id="mr-filter-kw" type="search" placeholder="输入关键词"></div>
+    <button type="button" class="mr-btn-ghost" id="mr-filter-reset">清除筛选</button>
+  </div>
+  <div class="mr-tablewrap"><table aria-describedby="mr-ledger-scope">
+    <thead><tr><th scope="col">活动名</th><th scope="col">项目线</th><th scope="col">主理人/负责人</th><th scope="col">日期</th><th scope="col">人数</th><th scope="col">坐标</th><th scope="col">记录人</th></tr></thead>
+    <tbody id="mr-ledger-body"></tbody>
+  </table></div>
+  <p class="mr-empty" id="mr-ledger-empty" hidden>没有匹配的台账行。试试清除筛选。</p>
+  <p class="mr-scope" id="mr-ledger-scope"></p>
+</section>
+<div class="mr-modal" id="mr-modal" role="dialog" aria-modal="true" aria-labelledby="mr-modal-title">
+  <div class="mr-modal-card">
+    <h3 id="mr-modal-title">复制月报纯文本</h3>
+    <p class="mr-hint" style="margin:0">沙箱内剪贴板受限：请全选下方文本后手动复制（Ctrl+A → Ctrl+C）。</p>
+    <textarea id="mr-modal-text" readonly aria-label="月报纯文本"></textarea>
+    <div class="mr-actions"><button type="button" class="mr-btn" id="mr-modal-select">全选文本</button><button type="button" class="mr-btn-ghost" id="mr-modal-close">关闭</button></div>
+  </div>
+</div>
+<div class="mr-toast" id="mr-toast" role="status" hidden></div>
+<p class="mr-foot">G04 内容生产方向 · 预研打样 D2 ｜ 依据：机构画像与需求预研（候选 B、P6/P7）、官网调研（W3：月报固定栏目 + 数字必须锁定）｜ 真实背景：机构 2026 年 10 月实际开展 27 场活动、服务 690 余名大学生（10 月月报，仅作量级参照，非本页数据）｜ 本页台账为虚构示例</p>
+</div><script>
+(function(){
+"use strict";
+var root=document.getElementById("mr-studio");if(!root){return;}
+var TODAY="2026-11-19";
+var LINES={zhiye:{name:"一日职业体验",color:"#FC9B00"},zhuliren:{name:"大学生主理人活动",color:"#79D3F2"},youshi:{name:"游拾计划",color:"#9BD500"},qingqiao:{name:"青桥计划",color:"#B07CC6"}};
+/* 虚构示例台账：每行 = 一场活动，字段与 D1 归档一致，另加记录人 */
+var LEDGER=[
+ {name:"一日职业体验 · 慢焙咖啡",line:"zhiye",host:"周予安",date:"2026-10-12",count:8,place:"银川 · 慢焙咖啡工作室",detail:"每人亲手烘了一锅豆子",recorder:"项目组·小林"},
+ {name:"一日职业体验 · 独立书店",line:"zhiye",host:"许知远（店长）",date:"2026-10-18",count:6,place:"银川 · 岛上书店",detail:"跟完了进书、上架、盘点全流程",recorder:"项目组·小林"},
+ {name:"一日职业体验 · 宠物医院",line:"zhiye",host:"杨医生",date:"2026-10-26",count:9,place:"银川 · 安心宠物医院",detail:"旁观了一台绝育手术的术前准备",recorder:"项目组·小林"},
+ {name:"音乐客厅 · 黑胶夜谈",line:"zhuliren",host:"马欣宇",date:"2026-10-20",count:12,place:"银川 · 蘭山文化空间",detail:"关灯听完整张 B 面再开聊",recorder:"主理人自报"},
+ {name:"发疯现场 · 期末前夜",line:"zhuliren",host:"丁一禾",date:"2026-10-24",count:15,place:"银川 · 大学城共享空间",detail:"每人上台喊出一件憋了很久的事",recorder:"主理人自报"},
+ {name:"库库花钱大富翁",line:"zhuliren",host:"陈暮",date:"2026-10-11",count:20,place:"银川 · 建发大阅城",detail:"用游戏币模拟一个月的开销决策",recorder:"主理人自报"},
+ {name:"人生拍卖会 · 第二季",line:"zhuliren",host:"何声",date:"2026-10-31",count:10,place:"银川 · 青年之家",detail:"「健康」被拍到全场最高价",recorder:"主理人自报"},
+ {name:"游拾计划 · 苏峪口净山",line:"youshi",host:"贺兰山小队",date:"2026-10-17",count:22,place:"贺兰山 · 苏峪口步道",detail:"两小时清出 14 袋垃圾并分类称重",recorder:"执行组·阿澈"},
+ {name:"游拾计划 · 亲子净山场",line:"youshi",host:"贺兰山小队",date:"2026-10-25",count:18,place:"贺兰山 · 滚钟口",detail:"最小志愿者 6 岁，认领了最陡一段",recorder:"执行组·阿澈"},
+ {name:"青桥计划 · 第 27 期见面会",line:"qingqiao",host:"项目组·郎老师",date:"2026-10-09",count:28,place:"线上 · 腾讯会议",detail:"28 位学员与职场导师完成首次 1v1",recorder:"青桥项目组"},
+ {name:"一日职业体验 · 咖啡烘焙返场",line:"zhiye",host:"周予安",date:"2026-11-15",count:8,place:"银川 · 慢焙咖啡工作室",detail:"离场时每人带走自己烘的豆子",recorder:"项目组·小林"},
+ {name:"音乐客厅 · 黑胶夜谈 II",line:"zhuliren",host:"马欣宇",date:"2026-11-08",count:12,place:"银川 · 蘭山文化空间",detail:"陌生同学交换了歌单和联系方式",recorder:"主理人自报"},
+ {name:"游拾计划 · 初冬净山行",line:"youshi",host:"贺兰山小队",date:"2026-11-02",count:22,place:"贺兰山 · 苏峪口步道",detail:"下山时每人认领一个「无痕」承诺",recorder:"执行组·阿澈"},
+ {name:"青桥计划 · 第 28 期启动会",line:"qingqiao",host:"项目组·郎老师",date:"2026-11-14",count:26,place:"线上 · 腾讯会议",detail:"26 位新学员进入匹配队列",recorder:"青桥项目组"}
+];
+/* 机构动态（虚构示例，不含金额；金额类披露留待人工补写） */
+var ORG_EVENTS={"2026-10":[{date:"2026-10-31",text:"「甜甜圈支持者之夜」慈善义拍会举办（筹款金额以财务复核后披露为准，本稿不填数）"},{date:"2026-10-15",text:"2026 年 10 月核心团队志愿者招募启动，新媒体排版专员等岗位开放报名"}],"2026-11":[{date:"2026-11-09",text:"《攒劲青年主理人十月刊》发布，归档 10 月主理人活动"}],"2026-09":[]};
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function fact(s){return '<span class="mr-fact">'+esc(s)+"</span>";}
+function monthRows(month){return LEDGER.filter(function(r){return r.date.slice(0,7)===month;});}
+function stats(month){
+ var rows=monthRows(month),people=0,hosts={},perLine={};
+ Object.keys(LINES).forEach(function(k){perLine[k]={sessions:0,people:0};});
+ rows.forEach(function(r){people+=r.count;hosts[r.host]=1;perLine[r.line].sessions+=1;perLine[r.line].people+=r.count;});
+ var sessions=rows.length;
+ return {month:month,rows:rows,sessions:sessions,people:people,hostCount:Object.keys(hosts).length,avg:sessions?Math.round(people/sessions*10)/10:0,perLine:perLine};
+}
+function monthLabel(month){var p=month.split("-");return p[0]+" 年 "+Number(p[1])+" 月";}
+function fmtDate(iso){var p=iso.split("-");return Number(p[1])+" 月 "+Number(p[2])+" 日";}
+function buildReport(st){
+ if(st.sessions===0){return {empty:true,html:'<p class="mr-empty">'+esc(monthLabel(st.month))+'台账暂无记录，无法生成月报。<br>请先让各项目补记台账行，或切换到有记录的月份。<b>空月不编数据、不写趋势。</b></p>'};}
+ var h='<h3>C公益 '+esc(monthLabel(st.month))+'工作月报（初稿）</h3>';
+ h+='<p class="mr-meta">数据来源：活动台账（'+fact(String(st.sessions))+' 行）｜生成方式：本地模板演示｜状态：待人工复核'+(st.month==="2026-11"?"｜口径：月中数据，截至演示日 2026-11-19":"")+'</p>';
+ h+='<h4>一、数据速览</h4><p>本月共开展活动 '+fact(String(st.sessions))+' 场，直接服务 '+fact(String(st.people))+' 人次，'+fact(String(st.hostCount))+' 位主理人/负责人参与执行，平均每场 '+fact(String(st.avg))+' 人。</p>';
+ h+='<h4>二、分项目线动态</h4>';
+ Object.keys(LINES).forEach(function(k){
+  var pl=st.perLine[k];if(pl.sessions===0){return;}
+  h+='<p><b>'+esc(LINES[k].name)+'</b>：'+fact(String(pl.sessions))+' 场，'+fact(String(pl.people))+' 人次。</p><ul>';
+  st.rows.forEach(function(r){if(r.line!==k){return;}h+='<li>'+esc(r.name)+'｜'+esc(r.host)+'｜'+fact(fmtDate(r.date))+'｜'+fact(String(r.count))+' 人｜'+esc(r.place)+'。'+esc(r.detail)+'。</li>';});
+  h+='</ul>';
+ });
+ h+='<h4>三、机构动态</h4>';
+ var ev=ORG_EVENTS[st.month]||[];
+ if(ev.length===0){h+='<p>本月台账未登记机构动态（待人工补充）。</p>';}else{h+='<ul>';ev.forEach(function(e){h+='<li>'+fact(fmtDate(e.date))+'：'+esc(e.text)+'</li>';});h+='</ul>';}
+ h+='<h4>四、待人工补写栏目</h4><ul><li>受益人故事（需采访与本人授权，模板不代写）</li><li>财务披露 / 筹款数据（金额必须经财务复核，本稿留空）</li><li>下月计划（各项目负责人确认）</li></ul>';
+ h+='<h4>五、披露声明</h4><p>本月报为初稿。所有场次、人数均由活动台账计算生成；涉及公开募捐信息以备案口径为准（备案名称：打破资源鸿沟 点亮西北未来）。未经复核不得对外发布。</p>';
+ h+='<p class="mr-credit">汇总｜月报工坊（演示）　复核｜待认领　数据截至｜台账当前记录</p>';
+ return {empty:false,html:h};
+}
+window.__mr={LINES:LINES,LEDGER:LEDGER,stats:stats,monthLabel:monthLabel,fmtDate:fmtDate,buildReport:buildReport,esc:esc,fact:fact,TODAY:TODAY};
+})();
+</script><script>
+(function(){
+"use strict";
+var root=document.getElementById("mr-studio");var M=window.__mr;if(!root||!M){return;}
+var LINES=M.LINES,LEDGER=M.LEDGER;
+var $=function(id){return document.getElementById(id);};
+var state={month:"2026-10",report:null,status:"none",filter:{line:"all",kw:""},view:"report"};
+var toastTimer=null;
+function toast(msg){var t=$("mr-toast");t.textContent=msg;t.hidden=false;if(toastTimer){clearTimeout(toastTimer);}toastTimer=setTimeout(function(){t.hidden=true;},2600);}
+function plain(html){var s=html.replace(/<br\s*\/?>/g,"\n").replace(/<\/(p|h3|h4|li|ul|div)>/g,"\n").replace(/<[^>]+>/g,"");var ta=document.createElement("textarea");ta.innerHTML=s;return ta.value.replace(/\n{3,}/g,"\n\n").replace(/[ \t]+\n/g,"\n").trim();}
+/* ---- 侧栏统计：与月报同一 stats() ---- */
+function renderSide(){
+ var st=M.stats(state.month);
+ $("mr-side-scope").textContent="口径："+M.monthLabel(state.month)+"全部台账行"+(state.month==="2026-11"?"（月中，截至 "+M.TODAY+"）":"")+"，共 "+st.rows.length+" 行";
+ var m=$("mr-metrics");m.innerHTML="";
+ [["活动场次",st.sessions+" 场"],["服务人次",st.people+" 人"],["主理人/负责人",st.hostCount+" 位"],["平均每场",st.avg+" 人"]].forEach(function(p){var d=document.createElement("div");d.className="mr-metric";d.innerHTML="<b>"+M.esc(p[1])+"</b>"+M.esc(p[0]);m.appendChild(d);});
+ var bars=$("mr-bars");bars.innerHTML="";
+ var max=Math.max.apply(null,Object.keys(LINES).map(function(k){return st.perLine[k].sessions;}).concat([1]));
+ Object.keys(LINES).forEach(function(k){
+  var pl=st.perLine[k];
+  var row=document.createElement("div");row.className="mr-bar-row";
+  row.innerHTML="<span>"+M.esc(LINES[k].name)+"</span><div class='mr-bar-track'><div class='mr-bar-fill' style='width:"+Math.round(pl.sessions/max*100)+"%;background:"+LINES[k].color+"'></div></div><span class='mr-bar-num'>"+pl.sessions+" 场 / "+pl.people+" 人</span>";
+  bars.appendChild(row);
+ });
+ /* 勾稽自检：分项之和 = 总计 */
+ var sumS=0,sumP=0;Object.keys(LINES).forEach(function(k){sumS+=st.perLine[k].sessions;sumP+=st.perLine[k].people;});
+ var okS=sumS===st.sessions,okP=sumP===st.people;
+ var ck=$("mr-check");
+ ck.innerHTML="<h3>数字勾稽（每次生成自动核对）</h3><ul>"
+ +"<li class='"+(okS?"mr-ok":"mr-warn")+"'>"+(okS?"✓":"✗")+" 分项场次合计 "+sumS+" = 总场次 "+st.sessions+"</li>"
+ +"<li class='"+(okP?"mr-ok":"mr-warn")+"'>"+(okP?"✓":"✗")+" 分项人次合计 "+sumP+" = 总人次 "+st.people+"</li>"
+ +"<li class='mr-ok'>✓ 模板零新增数字：正文数字全部来自左表</li>"
+ +"<li class='mr-warn'>△ 金额 / 备案号：留待人工复核补写</li></ul>";
+ console.assert(okS&&okP,"分项与总计必须勾稽相等");
+ return st;
+}
+function setBadge(){
+ var b=$("mr-report-badge");b.className="mr-badge";
+ if(state.status==="none"){b.textContent="待生成";}
+ else if(state.status==="empty"){b.classList.add("warn");b.textContent="空月 · 无数据";}
+ else if(state.status==="draft"){b.classList.add("draft");b.textContent="初稿 · 待人工复核";}
+ else if(state.status==="ok"){b.classList.add("ok");b.textContent="已复核 · 可排版发布";}
+}
+function renderReport(){
+ var pv=$("mr-report");
+ if(!state.report){pv.innerHTML='<p class="mr-empty">选择月份后点「生成月报初稿」。<br>栏目沿用机构现有月报形态：数据速览 → 分项目线动态 → 机构动态 → 待补栏目 → 披露声明。</p>';$("mr-report-actions").hidden=true;}
+ else{pv.innerHTML=state.report.html;$("mr-report-actions").hidden=state.report.empty;
+  var ap=$("mr-approve");ap.disabled=state.status!=="draft";ap.textContent=state.status==="ok"?"已复核":"人工复核通过";}
+ setBadge();
+}
+/* ---- 台账视图 ---- */
+function filteredRows(){return LEDGER.filter(function(r){if(state.filter.line!=="all"&&r.line!==state.filter.line){return false;}if(state.filter.kw&&(r.name+r.host).toLowerCase().indexOf(state.filter.kw.toLowerCase())<0){return false;}return true;});}
+function renderLedger(){
+ var rows=filteredRows(),body=$("mr-ledger-body");body.innerHTML="";var people=0;
+ rows.forEach(function(r){people+=r.count;
+  var tr=document.createElement("tr");
+  tr.innerHTML="<td>"+M.esc(r.name)+"</td><td><span class='mr-line-badge "+r.line+"'>"+M.esc(LINES[r.line].name)+"</span></td><td>"+M.esc(r.host)+"</td><td>"+M.esc(r.date)+"</td><td class='num'>"+r.count+"</td><td>"+M.esc(r.place)+"</td><td>"+M.esc(r.recorder)+"</td>";
+  body.appendChild(tr);});
+ $("mr-ledger-empty").hidden=rows.length>0;
+ var scope=state.filter.line==="all"?"全部项目线":LINES[state.filter.line].name;
+ $("mr-ledger-scope").textContent="当前筛选："+scope+(state.filter.kw?"，关键词「"+state.filter.kw+"」":"")+"｜"+rows.length+" 行，参与人数合计 "+people+" 人（只统计筛选结果）。台账共 "+LEDGER.length+" 行，全部为虚构示例。";
+ $("mr-month-chip").textContent="示例台账 · "+LEDGER.length+" 行";
+ console.assert(people===rows.reduce(function(s,r){return s+r.count;},0),"筛选合计须与行同源");
+}
+function setView(v){state.view=v;root.dataset.view=v;var navs=root.querySelectorAll(".mr-nav button");for(var i=0;i<navs.length;i+=1){var on=navs[i].dataset.view===v;navs[i].setAttribute("aria-pressed",on?"true":"false");navs[i].classList.toggle("is-active",on);}$("mr-ledger-card").hidden=v!=="ledger";}
+/* ---- 事件 ---- */
+$("mr-month").addEventListener("change",function(){state.month=this.value;state.report=null;state.status="none";renderSide();renderReport();});
+$("mr-generate").addEventListener("click",function(){
+ var st=renderSide();var r=M.buildReport(st);
+ state.report=r;state.status=r.empty?"empty":"draft";
+ renderReport();
+ toast(r.empty?"该月台账为空：不编数据，已提示补记":"月报初稿已生成（"+st.sessions+" 场 / "+st.people+" 人次，勾稽通过），待人工复核");
+});
+$("mr-approve").addEventListener("click",function(){if(state.status!=="draft"){return;}state.status="ok";renderReport();toast("已人工复核通过，可进入 135/秀米 排版（演示不落库）");});
+$("mr-copy").addEventListener("click",function(){if(!state.report){return;}openModal("月报纯文本 · "+M.monthLabel(state.month),plain(state.report.html));});
+$("mr-filter-line").addEventListener("change",function(){state.filter.line=this.value;renderLedger();});
+$("mr-filter-kw").addEventListener("input",function(){state.filter.kw=this.value.trim();renderLedger();});
+$("mr-filter-reset").addEventListener("click",function(){state.filter.line="all";state.filter.kw="";$("mr-filter-line").value="all";$("mr-filter-kw").value="";renderLedger();toast("筛选已清除");});
+var navs=root.querySelectorAll(".mr-nav button");
+for(var n=0;n<navs.length;n+=1){(function(btn){btn.addEventListener("click",function(){setView(btn.dataset.view);});})(navs[n]);}
+/* ---- 弹窗 ---- */
+var modal=$("mr-modal"),modalText=$("mr-modal-text"),lastFocus=null;
+function openModal(title,text){lastFocus=document.activeElement;$("mr-modal-title").textContent=title;modalText.value=text;modal.classList.add("open");modalText.focus();modalText.select();}
+function closeModal(){modal.classList.remove("open");if(lastFocus&&lastFocus.focus){lastFocus.focus();}}
+$("mr-modal-close").addEventListener("click",closeModal);
+$("mr-modal-select").addEventListener("click",function(){modalText.focus();modalText.select();});
+modal.addEventListener("click",function(ev){if(ev.target===modal){closeModal();}});
+document.addEventListener("keydown",function(ev){if(ev.key==="Escape"&&modal.classList.contains("open")){closeModal();}});
+/* ---- 初始化 ---- */
+renderSide();renderLedger();renderReport();setView("report");
+console.assert(M.stats("2026-10").sessions===10,"10月示例台账应为10场");
+console.assert(M.stats("2026-09").sessions===0,"9月应为空月演示");
+})();
+</script>

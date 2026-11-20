@@ -1,0 +1,418 @@
+<div id="zj-studio" data-view="output">
+<style>
+#zj-studio{--bg:#F6F1E3;--surface:#FFFDF6;--ink:#5A2D0C;--muted:#8F7358;--border:#E7DCC5;--accent:#FC9B00;--accent-deep:#B36E00;--sky:#79D3F2;--sky-soft:#E3F5FC;--leaf:#9BD500;--leaf-deep:#4F7A00;--danger:#C2452D;--danger-soft:#FBEAE5;--r:16px;max-width:1240px;margin:0 auto;padding:18px 16px 26px;background:var(--bg);color:var(--ink);font:14px/1.65 "PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;border-radius:20px}
+#zj-studio *{box-sizing:border-box}
+#zj-studio h1,#zj-studio h2,#zj-studio h3,#zj-studio p{margin:0}
+#zj-studio button{font:inherit;color:inherit}
+#zj-studio .zj-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+#zj-studio .zj-brand{display:flex;gap:10px;align-items:center}
+#zj-studio .zj-brand h1{font-size:20px;letter-spacing:.5px}
+#zj-studio .zj-sub{font-size:12px;color:var(--muted)}
+#zj-studio .zj-head-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#zj-studio .zj-chip{font-size:12px;background:var(--sky-soft);border:1px solid #BCE4F4;color:#1D6E8C;padding:3px 10px;border-radius:999px;white-space:nowrap}
+#zj-studio .zj-demo{font-size:12px;background:#FFF3DC;border:1px solid #F2CE93;color:var(--accent-deep);padding:3px 10px;border-radius:999px}
+#zj-studio .zj-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+#zj-studio .zj-nav button{border:1px solid var(--border);background:var(--surface);padding:7px 14px;border-radius:999px;cursor:pointer;font-size:13px}
+#zj-studio .zj-nav button.is-active{background:var(--ink);color:#FFF6E6;border-color:var(--ink)}
+#zj-studio .zj-note{font-size:12px;color:var(--muted);background:var(--surface);border:1px dashed var(--border);border-radius:10px;padding:7px 12px;margin-bottom:12px}
+#zj-studio .zj-main{display:grid;grid-template-columns:396px minmax(0,1fr);gap:14px;align-items:start}
+#zj-studio .zj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+#zj-studio .zj-card h2{font-size:15px;margin-bottom:4px}
+#zj-studio .zj-hint{font-size:12px;color:var(--muted);margin-bottom:12px}
+#zj-studio .zj-field{margin-bottom:10px}
+#zj-studio .zj-field label{display:block;font-size:12.5px;font-weight:600;margin-bottom:3px}
+#zj-studio .zj-field input,#zj-studio .zj-field select,#zj-studio .zj-field textarea{width:100%;border:1px solid var(--border);border-radius:10px;padding:8px 10px;font:inherit;background:#fff;color:var(--ink)}
+#zj-studio .zj-field textarea{resize:vertical;min-height:44px}
+#zj-studio .zj-field input:focus-visible,#zj-studio .zj-field select:focus-visible,#zj-studio .zj-field textarea:focus-visible,#zj-studio button:focus-visible{outline:2px solid var(--accent-deep);outline-offset:1px}
+#zj-studio .zj-err{display:none;font-size:12px;color:var(--danger);margin-top:2px}
+#zj-studio .zj-field.invalid input{border-color:var(--danger);background:#FFF9F7}
+#zj-studio .zj-field.invalid .zj-err{display:block}
+#zj-studio .zj-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#zj-studio .zj-check{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;background:var(--sky-soft);border:1px solid #BCE4F4;border-radius:10px;padding:8px 10px;margin-bottom:12px}
+#zj-studio .zj-check input{margin-top:3px;width:15px;height:15px;accent-color:var(--accent-deep)}
+#zj-studio .zj-actions{display:flex;gap:8px;flex-wrap:wrap}
+#zj-studio .zj-btn{border:none;background:var(--accent);color:#4A2606;font-weight:700;padding:10px 18px;border-radius:999px;cursor:pointer}
+#zj-studio .zj-btn:hover{filter:brightness(1.05)}
+#zj-studio .zj-btn:disabled{opacity:.55;cursor:not-allowed}
+#zj-studio .zj-btn-ghost{border:1px solid var(--border);background:#fff;padding:9px 14px;border-radius:999px;cursor:pointer;font-size:13px}
+#zj-studio .zj-examples{margin-top:12px;border-top:1px dashed var(--border);padding-top:10px}
+#zj-studio .zj-examples p{font-size:12px;color:var(--muted);margin-bottom:6px}
+#zj-studio .zj-examples button{border:1px solid var(--border);background:#fff;font-size:12px;padding:5px 10px;border-radius:999px;cursor:pointer;margin:0 6px 6px 0}
+#zj-studio .zj-out-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;margin-bottom:8px}
+#zj-studio .zj-out-meta{font-size:12px;color:var(--muted)}
+#zj-studio .zj-progress{font-size:12.5px;color:var(--accent-deep);background:#FFF3DC;border-radius:10px;padding:7px 12px;margin-bottom:8px}
+#zj-studio .zj-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border);margin-bottom:12px}
+#zj-studio .zj-tabs button{border:none;background:none;padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)}
+#zj-studio .zj-tabs button[aria-selected="true"]{color:var(--ink);font-weight:700;border-bottom-color:var(--accent)}
+#zj-studio .zj-panel-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+#zj-studio .zj-panel-head h3{font-size:14px}
+#zj-studio .zj-len{font-size:12px;color:var(--muted);font-weight:400;margin-left:6px}
+#zj-studio .zj-badge{font-size:12px;padding:2px 10px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--muted);white-space:nowrap}
+#zj-studio .zj-badge.draft{background:#FFF3DC;border-color:#F2CE93;color:var(--accent-deep)}
+#zj-studio .zj-badge.ok{background:#F0F7DC;border-color:#C4E08A;color:var(--leaf-deep)}
+#zj-studio .zj-badge.block{background:var(--danger-soft);border-color:#E8B5A8;color:var(--danger)}
+#zj-studio .zj-preview{border:1px solid var(--border);border-radius:12px;background:#fff;padding:16px;min-height:220px}
+#zj-studio .zj-panel-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+#zj-studio .zj-panel-actions .zj-tip{font-size:12px;color:var(--muted)}
+#zj-studio .zj-fact{background:var(--sky-soft);border-bottom:1px solid #7FCBE8;padding:0 2px;border-radius:3px;white-space:nowrap}
+#zj-studio .zj-art-title{font-size:17px;font-weight:800;margin-bottom:8px}
+#zj-studio .zj-art-sec{font-size:13.5px;font-weight:700;color:var(--accent-deep);margin:12px 0 4px}
+#zj-studio .zj-preview p{margin:0 0 6px}
+#zj-studio .zj-art-meta{font-size:12px;color:var(--muted);border-left:3px solid var(--sky);padding-left:8px;margin-bottom:8px}
+#zj-studio .zj-credit{font-size:12px;color:var(--muted);margin-top:12px;border-top:1px dashed var(--border);padding-top:8px}
+#zj-studio .zj-story{max-width:430px}
+#zj-studio .zj-story-title{font-size:15.5px;font-weight:800;margin-bottom:8px}
+#zj-studio .zj-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+#zj-studio .zj-tag{font-size:12px;color:#1D6E8C;background:var(--sky-soft);padding:2px 8px;border-radius:6px}
+#zj-studio .zj-charcount{font-size:12px;color:var(--muted);margin-top:8px}
+#zj-studio .zj-grid9{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:300px;margin:10px 0}
+#zj-studio .zj-grid9 figure{margin:0;aspect-ratio:1/1;border-radius:10px;background:var(--sky-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:1px solid #C9E8F5}
+#zj-studio .zj-grid9 figcaption{font-size:10.5px;color:#1D6E8C}
+#zj-studio .zj-quote-card{background:#FAF7E8;border:1px solid var(--border);border-radius:14px;padding:14px 16px;max-width:430px;margin-top:10px}
+#zj-studio .zj-quote-card blockquote{margin:0;font-size:15px;font-weight:700}
+#zj-studio .zj-quote-card cite{display:block;font-style:normal;font-size:12px;color:var(--muted);margin-top:6px}
+#zj-studio .zj-blocked{border:1.5px dashed #E8B5A8;background:var(--danger-soft);border-radius:12px;padding:16px;max-width:460px}
+#zj-studio .zj-blocked h4{margin:0 0 6px;font-size:14px;color:var(--danger)}
+#zj-studio .zj-blocked p{font-size:12.5px;margin-bottom:10px}
+#zj-studio .zj-poster-wrap{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+#zj-studio .zj-poster{width:252px;aspect-ratio:3/4;background:var(--sky);border-radius:18px;padding:12px;flex:none}
+#zj-studio .zj-poster-inner{background:#FAF7E8;border-radius:14px;height:100%;padding:16px 14px;display:flex;flex-direction:column;gap:7px}
+#zj-studio .zj-poster-brand{font-size:10.5px;color:var(--muted);letter-spacing:1px}
+#zj-studio .zj-poster-title{font-size:21px;font-weight:800;line-height:1.3}
+#zj-studio .zj-poster-sub{font-size:12.5px;color:#7A4A1F}
+#zj-studio .zj-poster-info{font-size:11.5px;border-top:1px dashed var(--border);padding-top:7px;margin-top:auto}
+#zj-studio .zj-poster-pill{align-self:flex-start;background:var(--accent);color:#4A2606;font-size:11.5px;font-weight:700;border-radius:999px;padding:4px 12px}
+#zj-studio .zj-spec{flex:1;min-width:230px;font-size:12.5px}
+#zj-studio .zj-spec h4{margin:0 0 6px;font-size:13px}
+#zj-studio .zj-spec li{margin-bottom:4px}
+#zj-studio .zj-swatches{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+#zj-studio .zj-sw{display:flex;align-items:center;gap:5px;font-size:11.5px;border:1px solid var(--border);border-radius:999px;padding:2px 8px;background:#fff}
+#zj-studio .zj-sw i{width:12px;height:12px;border-radius:4px;display:inline-block;border:1px solid rgba(90,45,12,.2)}
+#zj-studio .zj-empty{color:var(--muted);font-size:13px;padding:26px 8px;text-align:center}
+#zj-studio .zj-ledger-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px}
+#zj-studio .zj-ledger-tools .zj-field{margin:0;min-width:170px}
+#zj-studio .zj-metrics{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+#zj-studio .zj-metric{background:var(--sky-soft);border:1px solid #BCE4F4;border-radius:12px;padding:8px 14px;font-size:12px;color:#1D6E8C}
+#zj-studio .zj-metric b{display:block;font-size:18px;color:var(--ink)}
+#zj-studio .zj-tablewrap{overflow-x:auto}
+#zj-studio table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+#zj-studio th{font-size:12px;color:var(--muted);text-align:left;font-weight:600;border-bottom:1px solid var(--border);padding:6px 8px;white-space:nowrap}
+#zj-studio td{border-bottom:1px solid #F0E8D6;padding:8px;vertical-align:top}
+#zj-studio td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+#zj-studio .zj-line-badge{font-size:11.5px;padding:2px 8px;border-radius:999px;white-space:nowrap}
+#zj-studio .zj-line-badge.zhiye{background:#FFF3DC;color:var(--accent-deep)}
+#zj-studio .zj-line-badge.zhuliren{background:var(--sky-soft);color:#1D6E8C}
+#zj-studio .zj-line-badge.youshi{background:#F0F7DC;color:var(--leaf-deep)}
+#zj-studio .zj-rowbtn{border:1px solid var(--border);background:#fff;font-size:12px;padding:4px 10px;border-radius:999px;cursor:pointer;white-space:nowrap}
+#zj-studio .zj-fakelock{font-size:12px;color:var(--muted);margin-top:10px;border-top:1px dashed var(--border);padding-top:8px}
+#zj-studio .zj-modal{display:none;position:fixed;inset:0;background:rgba(60,35,10,.45);z-index:60;align-items:center;justify-content:center;padding:16px}
+#zj-studio .zj-modal.open{display:flex}
+#zj-studio .zj-modal-card{background:var(--surface);border-radius:16px;max-width:560px;width:100%;max-height:82vh;display:flex;flex-direction:column;padding:16px;gap:10px}
+#zj-studio .zj-modal-card h3{font-size:15px}
+#zj-studio .zj-modal-card textarea{flex:1;min-height:220px;border:1px solid var(--border);border-radius:10px;padding:10px;font:12.5px/1.6 inherit;resize:none;background:#fff;color:var(--ink)}
+#zj-studio .zj-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#FFF6E6;font-size:13px;padding:9px 16px;border-radius:999px;z-index:70;max-width:88vw;text-align:center}
+#zj-studio .zj-foot{font-size:11.5px;color:var(--muted);margin-top:14px}
+@media (max-width:919px){#zj-studio .zj-main{display:block}#zj-studio[data-view="form"] #zj-out{display:none}#zj-studio[data-view="output"] #zj-form{display:none}#zj-studio[data-view="form"] #zj-ledger,#zj-studio[data-view="output"] #zj-ledger{display:none}#zj-studio[data-view="ledger"] #zj-form,#zj-studio[data-view="ledger"] #zj-out{display:none}}
+@media (min-width:920px){#zj-studio[data-view="ledger"] .zj-main{display:none}}
+@media (prefers-reduced-motion:no-preference){#zj-studio .zj-btn{transition:filter .15s}}
+</style>
+<header class="zj-head">
+  <div class="zj-brand">
+    <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="22" r="13" fill="none" stroke="#FC9B00" stroke-width="5" stroke-dasharray="61 21" stroke-linecap="round" transform="rotate(120 20 22)"/><circle cx="20" cy="22" r="7" fill="none" stroke="#79D3F2" stroke-width="4" stroke-dasharray="33 11" stroke-linecap="round" transform="rotate(-60 20 22)"/><path d="M20 15 C20 10 17 8 14 8 C14 12 17 14 20 15 Z" fill="#9BD500"/><path d="M20 15 C20 9 23 6 27 6 C27 11 24 14 20 15 Z" fill="#9BD500"/></svg>
+    <div><h1>攒劲内容工坊</h1><p class="zj-sub">一场活动 → 五路内容 · 向下扎根，向上生长</p></div>
+  </div>
+  <div class="zj-head-right"><span class="zj-chip" id="zj-month-chip">示例台账 —</span><span class="zj-demo">演示模式 · 本地模板模拟生成</span></div>
+</header>
+<nav class="zj-nav" aria-label="工作区切换">
+  <button type="button" data-view="form" aria-pressed="false">① 活动归档</button>
+  <button type="button" data-view="output" aria-pressed="true">② 生成内容</button>
+  <button type="button" data-view="ledger" aria-pressed="false">③ 活动台账</button>
+</nav>
+<p class="zj-note">预研打样 D1 · 对应调研「候选 A：活动内容一键成稿」。演示数据均为<b>虚构示例</b>；生成由本地模板 + 变量替换完成，不调用大模型。人数、日期、坐标等事实只取自归档输入（正文中<span class="zj-fact">蓝色底纹</span>为锁定事实），产物需人工过审后才可发布。</p>
+<div class="zj-main">
+<section id="zj-form" class="zj-card" aria-label="活动归档表单">
+  <h2>活动归档 · 结束当天填一行</h2>
+  <p class="zj-hint">字段沿用《主理人十月刊》格式：活动名｜主理人｜时间｜人数｜坐标｜细节，机构同学零学习成本。</p>
+  <div class="zj-field" data-f="name"><label for="zj-f-name">活动名称 *</label><input id="zj-f-name" type="text" placeholder="例：一日职业体验 · 咖啡烘焙工作室" maxlength="40"><p class="zj-err">请填写活动名称</p></div>
+  <div class="zj-two">
+    <div class="zj-field"><label for="zj-f-line">项目线 *</label><select id="zj-f-line"><option value="zhiye">一日职业体验</option><option value="zhuliren">大学生主理人活动</option><option value="youshi">游拾计划</option></select></div>
+    <div class="zj-field" data-f="host"><label for="zj-f-host">主理人 / 带教人 *</label><input id="zj-f-host" type="text" placeholder="例：马欣宇" maxlength="16"><p class="zj-err">请填写主理人或带教人</p></div>
+  </div>
+  <div class="zj-two">
+    <div class="zj-field" data-f="date"><label for="zj-f-date">活动日期 *</label><input id="zj-f-date" type="date"><p class="zj-err">请选择不晚于演示日 2026-11-19 的日期</p></div>
+    <div class="zj-field" data-f="count"><label for="zj-f-count">参与人数 *</label><input id="zj-f-count" type="number" min="1" max="999" step="1" placeholder="例：8"><p class="zj-err">人数须为 1–999 的整数</p></div>
+  </div>
+  <div class="zj-field" data-f="place"><label for="zj-f-place">坐标 *</label><input id="zj-f-place" type="text" placeholder="例：银川 · 西夏区 慢焙咖啡工作室" maxlength="30"><p class="zj-err">请填写活动坐标</p></div>
+  <div class="zj-field" data-f="d1"><label for="zj-f-d1">现场细节 1 *</label><input id="zj-f-d1" type="text" placeholder="一个具体画面，例：每个人亲手烘了一锅豆子" maxlength="50"><p class="zj-err">至少写 1 个现场细节</p></div>
+  <div class="zj-field"><label for="zj-f-d2">现场细节 2</label><input id="zj-f-d2" type="text" placeholder="例：主理人讲了开店头三年的账本" maxlength="50"></div>
+  <div class="zj-field"><label for="zj-f-d3">现场细节 3</label><input id="zj-f-d3" type="text" placeholder="例：离场时每人带走自己烘的豆子" maxlength="50"></div>
+  <div class="zj-field"><label for="zj-f-quote">参与者一句话（选填，金句卡用）</label><textarea id="zj-f-quote" rows="2" placeholder="例：原来吧台后面站着的是会计、采购和客服" maxlength="80"></textarea></div>
+  <div class="zj-two">
+    <div class="zj-field" data-f="photos"><label for="zj-f-photos">现场照片张数</label><input id="zj-f-photos" type="number" min="0" max="9" step="1" value="3"><p class="zj-err">照片张数须为 0–9 的整数</p></div>
+    <div class="zj-field"><label for="zj-f-auth">素材授权</label><div class="zj-check" style="margin:0"><input id="zj-f-auth" type="checkbox" checked><label for="zj-f-auth" style="font-weight:400;margin:0">照片与反馈已获本人同意，可公开使用</label></div></div>
+  </div>
+  <div class="zj-actions"><button type="button" class="zj-btn" id="zj-generate">生成五路内容</button><button type="button" class="zj-btn-ghost" id="zj-clear">清空，记下一场</button></div>
+  <div class="zj-examples"><p>载入示例（虚构演示数据）：</p><button type="button" data-example="a1">职业体验 · 咖啡烘焙</button><button type="button" data-example="a2">主理人 · 音乐客厅</button><button type="button" data-example="a3">游拾 · 贺兰山净山</button></div>
+</section><section id="zj-out" class="zj-card" aria-label="生成内容工作区">
+  <div class="zj-out-head"><h2>生成内容 · 五路产物</h2><p class="zj-out-meta" id="zj-out-meta">尚未选择活动</p></div>
+  <p class="zj-progress" id="zj-progress" hidden aria-live="polite"></p>
+  <div class="zj-tabs" role="tablist" aria-label="内容产物切换">
+    <button type="button" role="tab" id="zj-tab-wechat" aria-controls="zj-panel-wechat" aria-selected="true">公众号回顾</button>
+    <button type="button" role="tab" id="zj-tab-story" aria-controls="zj-panel-story" aria-selected="false">小红书·青年故事</button>
+    <button type="button" role="tab" id="zj-tab-feedback" aria-controls="zj-panel-feedback" aria-selected="false">小红书·活动反馈</button>
+    <button type="button" role="tab" id="zj-tab-science" aria-controls="zj-panel-science" aria-selected="false">小红书·公益科普</button>
+    <button type="button" role="tab" id="zj-tab-poster" aria-controls="zj-panel-poster" aria-selected="false">海报文案</button>
+  </div>
+  <div id="zj-panel-wechat" role="tabpanel" aria-labelledby="zj-tab-wechat">
+    <div class="zj-panel-head"><h3>公众号回顾长文<span class="zj-len" id="zj-len-wechat"></span></h3><span class="zj-badge" id="zj-badge-wechat">待生成</span></div>
+    <div class="zj-preview" id="zj-preview-wechat"><p class="zj-empty">先在左侧归档一场活动，点「生成五路内容」。<br>生成后此处为可直接粘贴进 135/秀米 的图文结构。</p></div>
+    <div class="zj-panel-actions" id="zj-actions-wechat" hidden><button type="button" class="zj-btn" data-approve="wechat">人工过审</button><button type="button" class="zj-btn-ghost" data-copy="wechat">复制纯文本</button><span class="zj-tip">过审后可发布；复制走机构现有排版工具，不加新工序</span></div>
+  </div>
+  <div id="zj-panel-story" role="tabpanel" aria-labelledby="zj-tab-story" hidden>
+    <div class="zj-panel-head"><h3>小红书 · 青年故事<span class="zj-len" id="zj-len-story"></span></h3><span class="zj-badge" id="zj-badge-story">待生成</span></div>
+    <div class="zj-preview" id="zj-preview-story"><p class="zj-empty">青年故事 = 主理人视角的单篇笔记，素材直接来自归档行。</p></div>
+    <div class="zj-panel-actions" id="zj-actions-story" hidden><button type="button" class="zj-btn" data-approve="story">人工过审</button><button type="button" class="zj-btn-ghost" data-copy="story">复制纯文本</button><span class="zj-tip">正文 ≤1000 字，标签自动带上项目线与银川本地词</span></div>
+  </div>
+  <div id="zj-panel-feedback" role="tabpanel" aria-labelledby="zj-tab-feedback" hidden>
+    <div class="zj-panel-head"><h3>小红书 · 活动反馈<span class="zj-len" id="zj-len-feedback"></span></h3><span class="zj-badge" id="zj-badge-feedback">待生成</span></div>
+    <div class="zj-preview" id="zj-preview-feedback"><p class="zj-empty">活动反馈 = 九宫格 + 金句卡，一场活动一条笔记。</p></div>
+    <div class="zj-panel-actions" id="zj-actions-feedback" hidden><button type="button" class="zj-btn" data-approve="feedback">人工过审</button><button type="button" class="zj-btn-ghost" data-copy="feedback">复制纯文本</button><span class="zj-tip">未授权素材不会出现在九宫格与金句卡中</span></div>
+  </div>
+  <div id="zj-panel-science" role="tabpanel" aria-labelledby="zj-tab-science" hidden>
+    <div class="zj-panel-head"><h3>小红书 · 公益科普<span class="zj-len" id="zj-len-science"></span></h3><span class="zj-badge" id="zj-badge-science">待生成</span></div>
+    <div class="zj-preview" id="zj-preview-science"><p class="zj-empty">公益科普 = 从这场活动能延伸的一个知识点，长尾内容稳定供给。</p></div>
+    <div class="zj-panel-actions" id="zj-actions-science" hidden><button type="button" class="zj-btn" data-approve="science">人工过审</button><button type="button" class="zj-btn-ghost" data-copy="science">复制纯文本</button><span class="zj-tip">科普骨架来自项目线知识库，活动数据只做例证</span></div>
+  </div>
+  <div id="zj-panel-poster" role="tabpanel" aria-labelledby="zj-tab-poster" hidden>
+    <div class="zj-panel-head"><h3>海报文案 + 品牌 3.0 版式<span class="zj-len" id="zj-len-poster"></span></h3><span class="zj-badge" id="zj-badge-poster">待生成</span></div>
+    <div class="zj-preview" id="zj-preview-poster"><p class="zj-empty">输出文案与版式规范（色板/字号/圆角），交给可画/Canva 同学直接套。</p></div>
+    <div class="zj-panel-actions" id="zj-actions-poster" hidden><button type="button" class="zj-btn" data-approve="poster">人工过审</button><button type="button" class="zj-btn-ghost" data-copy="poster">复制纯文本</button><span class="zj-tip">出成图是二期加分项，本期只锁文案与版式</span></div>
+  </div>
+</section>
+</div>
+<section id="zj-ledger" class="zj-card" aria-label="活动台账" hidden>
+  <div class="zj-out-head"><h2>活动台账 · 结构化沉淀</h2><p class="zj-out-meta">归档即入库；同一份数据喂公众号月刊与月报（见 D2）</p></div>
+  <div class="zj-ledger-tools">
+    <div class="zj-field"><label for="zj-filter-line">按项目线筛选</label><select id="zj-filter-line"><option value="all">全部项目线</option><option value="zhiye">一日职业体验</option><option value="zhuliren">大学生主理人活动</option><option value="youshi">游拾计划</option></select></div>
+    <div class="zj-field"><label for="zj-filter-kw">按名称 / 主理人搜索</label><input id="zj-filter-kw" type="search" placeholder="输入关键词"></div>
+    <button type="button" class="zj-btn-ghost" id="zj-filter-reset">清除筛选</button>
+  </div>
+  <div class="zj-metrics" id="zj-metrics" aria-live="polite"></div>
+  <div class="zj-tablewrap"><table aria-describedby="zj-ledger-scope">
+    <thead><tr><th scope="col">活动名</th><th scope="col">项目线</th><th scope="col">主理人</th><th scope="col">日期</th><th scope="col">人数</th><th scope="col">坐标</th><th scope="col">产物状态</th><th scope="col">操作</th></tr></thead>
+    <tbody id="zj-ledger-body"></tbody>
+  </table></div>
+  <p class="zj-empty" id="zj-ledger-empty" hidden>没有匹配的活动。试试清除筛选，或先去「活动归档」记一场。</p>
+  <p class="zj-fakelock" id="zj-ledger-scope">统计口径随筛选变化并实时标注；人数合计只来自台账行，任何模板不产生新数字。示例行均为虚构演示数据。</p>
+</section>
+<div class="zj-modal" id="zj-modal" role="dialog" aria-modal="true" aria-labelledby="zj-modal-title">
+  <div class="zj-modal-card">
+    <h3 id="zj-modal-title">复制纯文本</h3>
+    <p class="zj-hint" style="margin:0">沙箱内剪贴板受限：请全选下方文本后手动复制（Ctrl+A → Ctrl+C）。</p>
+    <textarea id="zj-modal-text" readonly aria-label="产物纯文本"></textarea>
+    <div class="zj-actions"><button type="button" class="zj-btn" id="zj-modal-select">全选文本</button><button type="button" class="zj-btn-ghost" id="zj-modal-close">关闭</button></div>
+  </div>
+</div>
+<div class="zj-toast" id="zj-toast" role="status" hidden></div>
+<p class="zj-foot">G04 内容生产方向 · 预研打样 D1 ｜ 依据：机构画像与需求预研（候选 A）、攒劲青年内容现状与小红书增长点（一次归档三种切法）、官网调研（品牌 3.0 色板 #79D3F2 / #FAF7E8 / #FC9B00 / #5A2D0C / #9BD500）｜ 本页数据均为虚构示例，仅用于对谈演示</p>
+<script>
+(function(){
+"use strict";
+var root=document.getElementById("zj-studio");
+var TODAY="2026-11-19";
+var LINES={zhiye:{name:"一日职业体验",tone:"体验同学",tag:"#一日职业体验",scene:"真实职场空间"},zhuliren:{name:"大学生主理人活动",tone:"主理人",tag:"#大学生主理人",scene:"同学自己张罗的现场"},youshi:{name:"游拾计划",tone:"净山伙伴",tag:"#游拾计划",scene:"贺兰山步道"}};
+var BASE_TAGS=["#攒劲青年","#C公益","#银川活动","#大学生"];
+var SCIENCE={
+ zhiye:{title:"职业体验到底在体验什么？",points:["不是参观，是把一个岗位的一天完整过一遍：开门、备料、接待、算账、打烊","看的是「这份职业的日常成本」：体力、情绪、时间怎么分配","适合还没想清楚方向的同学：先排除不喜欢的，再谈喜欢"],ask:"你觉得体验一天，最该问带教人哪个问题？评论区聊聊"},
+ zhuliren:{title:"大学生自己办公益活动，统共分几步？",points:["一个想法 → 写清给谁办、办什么、要什么支持（一页纸就够）","机构给场地、小额资金、传播支持，学生自己当主理人","办完复盘留档，下一位主理人就能踩着你的经验往上走"],ask:"如果你来当主理人，想给同学办一场什么活动？"},
+ youshi:{title:"徒步捡垃圾，为什么叫「无痕山林」？",points:["核心原则：带走自己产生的一切，顺手带走别人留下的","垃圾分类称重记录，让「环保」变成看得见的数据","贺兰山是银川的后花园，它干净不干净，周末就能看见"],ask:"你上一次在山里捡起一片垃圾，是什么时候？"}
+};
+var state={activities:[],seq:0,currentId:null,filter:{line:"all",kw:""},view:"output"};
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function fact(s){return '<span class="zj-fact">'+esc(s)+"</span>";}
+function fmtDate(iso){var p=iso.split("-");return Number(p[1])+" 月 "+Number(p[2])+" 日";}
+function addActivity(rec){state.seq+=1;rec.id="act-"+state.seq;rec.outputs=null;state.activities.push(rec);return rec;}
+/* ---- 示例数据（虚构，仅演示） ---- */
+var EXAMPLES={
+ a1:{name:"一日职业体验 · 慢焙咖啡",line:"zhiye",host:"周予安（咖啡师）",date:"2026-11-15",count:8,place:"银川 · 西夏区 慢焙咖啡工作室",d1:"每人亲手烘了一锅豆子",d2:"主理人摊开开店头三年的账本",d3:"离场时每人带走自己烘的豆子",quote:"原来吧台后面站着的是会计、采购和客服",photos:3,auth:true},
+ a2:{name:"音乐客厅 · 黑胶夜谈",line:"zhuliren",host:"马欣宇",date:"2026-11-08",count:12,place:"银川 · 蘭山文化空间",d1:"每人带一张最有故事的唱片",d2:"关灯听完整张 B 面再开聊",d3:"陌生同学交换了歌单和联系方式",quote:"灯一关，反而敢说真心话了",photos:6,auth:true},
+ a3:{name:"游拾计划 · 贺兰山净山行",line:"youshi",host:"贺兰山小队",date:"2026-11-02",count:22,place:"银川 · 贺兰山苏峪口步道",d1:"两小时清出 14 袋垃圾并分类称重",d2:"亲子家庭组负责最陡的一段",d3:"下山时每人认领了一个「无痕」承诺",quote:"孩子问我，为什么山上会有塑料瓶",photos:9,auth:true}
+};
+/* 预置台账：两条已归档未生成 + 一条已生成已过审，展示台账三种状态 */
+addActivity(Object.assign({},EXAMPLES.a2));
+addActivity(Object.assign({},EXAMPLES.a3));
+var seeded=addActivity(Object.assign({},EXAMPLES.a1));
+/* ---- 生成引擎：本地模板 + 变量替换；数字/日期/坐标只来自 rec ---- */
+function detailList(rec){var d=[rec.d1];if(rec.d2){d.push(rec.d2);}if(rec.d3){d.push(rec.d3);}return d;}
+function tagsFor(rec){return BASE_TAGS.concat([LINES[rec.line].tag]);}
+function buildOutputs(rec){
+ var L=LINES[rec.line],ds=detailList(rec),dHtml=ds.map(function(x){return "<li>"+esc(x)+"</li>";}).join("");
+ var dateTxt=fmtDate(rec.date),metaTxt=L.name+"｜"+rec.host+"｜"+dateTxt+"｜"+rec.count+" 人｜"+rec.place;
+ var wechatHtml='<h4 class="zj-art-title">活动回顾｜'+esc(rec.name)+'：'+esc(ds[0])+'</h4>'
+ +'<p class="zj-art-meta">'+fact(L.name)+"｜主理人 "+fact(rec.host)+"｜"+fact(dateTxt)+"｜参与 "+fact(String(rec.count))+" 人｜坐标 "+fact(rec.place)+'</p>'
+ +'<p>这一天，'+fact(String(rec.count))+' 位同学走进'+esc(L.scene)+'。没有旁听席，每个人都在现场。</p>'
+ +'<p class="zj-art-sec">现场三件事</p><ul>'+dHtml+'</ul>'
+ +(rec.quote?'<p class="zj-art-sec">同学说</p><p>“'+esc(rec.quote)+'。”</p>':'')
+ +'<p class="zj-art-sec">关于「'+esc(L.name)+'」</p><p>它是攒劲青年的固定项目线之一：把职业探索做成可以亲身体验的一天，而不是一篇讲道理的文章。想参加下一场，关注公众号推送即可报名。</p>'
+ +'<p class="zj-credit">文案｜攒劲内容工坊（初稿）　排版｜待认领　审核｜待过审<br>素材：'+(rec.auth?'已授权照片 '+fact(String(rec.photos))+' 张':'未授权，暂不附图')+'（示例）</p>';
+ var storyTitle=rec.host.split("（")[0]+"的"+dateTxt+"：在银川，把「"+rec.name.split(" · ")[0]+"」办成了";
+ var storyHtml='<div class="zj-story"><p class="zj-story-title">'+esc(storyTitle)+'</p>'
+ +'<p>我是'+esc(rec.host.split("（")[0])+'，'+esc(L.tone)+'。'+fact(dateTxt)+'，我们在'+esc(rec.place)+'，'+fact(String(rec.count))+' 个人，'+esc(ds[0])+'。</p>'
+ +'<p>最难忘的是：'+esc(ds[ds.length-1])+'。</p>'
+ +(rec.quote?'<p>有同学临走说：“'+esc(rec.quote)+'。”这句我记下了。</p>':'')
+ +'<p>在攒劲青年，这样的现场每个月都在发生。下一场，来吗？</p>'
+ +'<div class="zj-tags">'+tagsFor(rec).map(function(t){return '<span class="zj-tag">'+esc(t)+'</span>';}).join("")+'</div>'
+ +'<p class="zj-charcount">正文字数：<b data-story-count></b> / 1000</p></div>';
+ var grid="";
+ if(rec.auth&&rec.photos>0){var n=Math.min(rec.photos,9);grid='<div class="zj-grid9">';for(var i=0;i<n;i+=1){grid+='<figure><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3" fill="none" stroke="#1D6E8C" stroke-width="1.6"/><circle cx="9" cy="10" r="1.8" fill="#1D6E8C"/><path d="M5 17l5-4 3 2 4-4 2 2" fill="none" stroke="#1D6E8C" stroke-width="1.6"/></svg><figcaption>已授权 '+(i+1)+'/'+n+'</figcaption></figure>';}grid+='</div>';}
+ var feedbackHtml='<div class="zj-story"><p class="zj-story-title">'+esc(rec.name)+'｜'+fact(String(rec.count))+' 人到场，'+esc(ds[0])+'</p>'
+ +'<p>'+fact(dateTxt)+'，'+esc(rec.place)+'。'+esc(L.name)+'又落地一场，直接上现场：</p>'
+ +(rec.auth&&rec.photos>0?grid:'<div class="zj-blocked"><h4>照片未进生成环节</h4><p>本场素材未标「已授权可公开」，九宫格与金句卡暂不出图。补齐授权后重新生成即可。</p></div>')
+ +(rec.quote&&rec.auth?'<div class="zj-quote-card"><blockquote>“'+esc(rec.quote)+'”</blockquote><cite>—— 现场'+esc(L.tone)+'（已授权引用，示例）</cite></div>':'')
+ +'<p style="margin-top:10px">数据存档：参与 '+fact(String(rec.count))+' 人｜现场细节 '+fact(String(ds.length))+' 条'+(rec.auth?'｜可公开照片 '+fact(String(rec.photos))+' 张':'')+'</p>'
+ +'<div class="zj-tags">'+tagsFor(rec).concat(["#活动反馈"]).map(function(t){return '<span class="zj-tag">'+esc(t)+'</span>';}).join("")+'</div></div>';
+ var S=SCIENCE[rec.line];
+ var scienceHtml='<div class="zj-story"><p class="zj-story-title">'+esc(S.title)+'</p>'
+ +S.points.map(function(p,i){return '<p><b>'+(i+1)+'.</b> '+esc(p)+'</p>';}).join("")
+ +'<p>拿真实一场做例子：'+fact(dateTxt)+'，'+esc(rec.name)+'，'+fact(String(rec.count))+' 位同学在'+esc(rec.place)+'，'+esc(ds[0])+'。</p>'
+ +'<p>'+esc(S.ask)+'</p>'
+ +'<div class="zj-tags">'+tagsFor(rec).concat(["#公益科普"]).map(function(t){return '<span class="zj-tag">'+esc(t)+'</span>';}).join("")+'</div>'
+ +'<p class="zj-charcount">科普骨架来自「'+esc(L.name)+'」项目线知识库（演示为内置示例，正式版接机构语料）</p></div>';
+ var posterHtml='<div class="zj-poster-wrap"><div class="zj-poster"><div class="zj-poster-inner">'
+ +'<p class="zj-poster-brand">攒劲青年 ZANJIN YOUTH</p><p class="zj-poster-title">'+esc(rec.name)+'</p>'
+ +'<p class="zj-poster-sub">'+esc(ds[0])+'</p>'
+ +'<p class="zj-poster-info">'+fact(dateTxt)+'｜'+esc(rec.place)+'<br>'+esc(L.name)+'｜限 '+fact(String(rec.count))+' 人规模</p>'
+ +'<span class="zj-poster-pill">下一场 · 扫码报名</span></div></div>'
+ +'<div class="zj-spec"><h4>品牌 3.0 版式规范（给可画/Canva 同学）</h4>'
+ +'<div class="zj-swatches"><span class="zj-sw"><i style="background:#79D3F2"></i>天蓝 #79D3F2</span><span class="zj-sw"><i style="background:#FAF7E8"></i>奶油白 #FAF7E8</span><span class="zj-sw"><i style="background:#FC9B00"></i>品牌橙 #FC9B00</span><span class="zj-sw"><i style="background:#5A2D0C"></i>深棕 #5A2D0C</span><span class="zj-sw"><i style="background:#9BD500"></i>嫩绿 #9BD500</span></div>'
+ +'<ul><li>3:4 竖版（小红书封面同版式，1080×1440）</li><li>天蓝底 + 奶油白大圆角卡片，圆角 24px</li><li>主标题深棕粗圆体 ≥64px，副标题 ≥32px</li><li>行动按钮：品牌橙胶囊，深棕字</li><li>日期/坐标/人数为锁定事实，改稿不得改动</li><li>照片位放已授权现场图，未授权留白不填网图</li></ul>'
+ +'<p style="font-size:12px;color:var(--muted)">左侧为版式示意（文字真实排版，非成图）；出成图为二期能力。</p></div></div>';
+ return {wechat:{html:wechatHtml,status:"draft"},story:{html:storyHtml,status:"draft"},feedback:{html:feedbackHtml,status:rec.auth?"draft":"blocked"},science:{html:scienceHtml,status:"draft"},poster:{html:posterHtml,status:"draft"}};
+}
+window.__zj={state:state,LINES:LINES,EXAMPLES:EXAMPLES,addActivity:addActivity,buildOutputs:buildOutputs,esc:esc,fact:fact,fmtDate:fmtDate,seeded:seeded,TODAY:TODAY};
+})();
+</script><script>
+(function(){
+"use strict";
+var root=document.getElementById("zj-studio");
+var Z=window.__zj;if(!root||!Z){return;}
+var state=Z.state,LINES=Z.LINES,EXAMPLES=Z.EXAMPLES;
+var $=function(id){return document.getElementById(id);};
+var KEYS=["wechat","story","feedback","science","poster"];
+var NAMES={wechat:"公众号回顾",story:"小红书·青年故事",feedback:"小红书·活动反馈",science:"小红书·公益科普",poster:"海报文案"};
+var toastTimer=null;
+function toast(msg){var t=$("zj-toast");t.textContent=msg;t.hidden=false;if(toastTimer){clearTimeout(toastTimer);}toastTimer=setTimeout(function(){t.hidden=true;},2600);}
+function plain(html){var s=html.replace(/<br\s*\/?>/g,"\n").replace(/<\/(p|h4|li|div|blockquote|ul|figure|figcaption)>/g,"\n").replace(/<[^>]+>/g,"");var ta=document.createElement("textarea");ta.innerHTML=s;return ta.value.replace(/\n{3,}/g,"\n\n").replace(/[ \t]+\n/g,"\n").trim();}
+function current(){for(var i=0;i<state.activities.length;i+=1){if(state.activities[i].id===state.currentId){return state.activities[i];}}return null;}
+function outStatus(rec){if(!rec.outputs){return "未生成";}var ok=0,blocked=0;KEYS.forEach(function(k){var s=rec.outputs[k].status;if(s==="ok"){ok+=1;}if(s==="blocked"){blocked+=1;}});if(blocked>0){return "已生成 · 含拦截";}return ok===KEYS.length?"全部过审":"已生成 · 过审 "+ok+"/"+KEYS.length;}
+function setBadge(key,status){var b=$("zj-badge-"+key);b.className="zj-badge";if(status==="draft"){b.classList.add("draft");b.textContent="草稿 · 待人工过审";}else if(status==="ok"){b.classList.add("ok");b.textContent="已过审 · 可发布";}else if(status==="blocked"){b.classList.add("block");b.textContent="素材未授权 · 已拦截";}else{b.textContent="待生成";}}
+function renderOut(){
+ var rec=current();var meta=$("zj-out-meta");
+ if(!rec){meta.textContent="尚未选择活动";return;}
+ meta.textContent=rec.name+"｜"+LINES[rec.line].name+"｜"+Z.fmtDate(rec.date)+"｜"+rec.count+" 人";
+ KEYS.forEach(function(k){
+  var pv=$("zj-preview-"+k),act=$("zj-actions-"+k),len=$("zj-len-"+k);
+  if(!rec.outputs){pv.innerHTML='<p class="zj-empty">该活动尚未生成。点左侧「生成五路内容」，或在台账中点「生成产物」。</p>';act.hidden=true;setBadge(k,"none");len.textContent="";return;}
+  pv.innerHTML=rec.outputs[k].html;act.hidden=false;
+  var txt=plain(rec.outputs[k].html);len.textContent="约 "+txt.length+" 字";
+  setBadge(k,rec.outputs[k].status);
+  var ap=act.querySelector("[data-approve]");
+  ap.disabled=rec.outputs[k].status!=="draft";
+  ap.textContent=rec.outputs[k].status==="ok"?"已过审":"人工过审";
+  if(k==="feedback"){
+   var re=act.querySelector("[data-reauth]");
+   if(rec.outputs[k].status==="blocked"){ap.hidden=true;re.hidden=false;}else{ap.hidden=false;re.hidden=true;}
+  }
+  if(k==="story"){var c=pv.querySelector("[data-story-count]");if(c){var clone=pv.querySelector(".zj-story").cloneNode(true);var tg=clone.querySelector(".zj-tags");if(tg){tg.remove();}var cc=clone.querySelector(".zj-charcount");if(cc){cc.remove();}c.textContent=String(clone.textContent.replace(/\s+/g,"").length);}}
+ });
+}
+function filtered(){return state.activities.filter(function(a){if(state.filter.line!=="all"&&a.line!==state.filter.line){return false;}if(state.filter.kw){var kw=state.filter.kw.toLowerCase();if((a.name+a.host).toLowerCase().indexOf(kw)<0){return false;}}return true;});}
+function renderLedger(){
+ var rows=filtered(),body=$("zj-ledger-body");body.innerHTML="";
+ var people=0,gen=0,approved=0;
+ rows.forEach(function(a){
+  people+=a.count;if(a.outputs){gen+=1;KEYS.forEach(function(k){if(a.outputs[k].status==="ok"){approved+=1;}});}
+  var tr=document.createElement("tr");
+  tr.innerHTML="<td>"+Z.esc(a.name)+"</td><td><span class='zj-line-badge "+a.line+"'>"+Z.esc(LINES[a.line].name)+"</span></td><td>"+Z.esc(a.host)+"</td><td>"+Z.esc(a.date)+"</td><td class='num'>"+a.count+"</td><td>"+Z.esc(a.place)+"</td><td>"+Z.esc(outStatus(a))+"</td>";
+  var td=document.createElement("td");var btn=document.createElement("button");btn.type="button";btn.className="zj-rowbtn";btn.textContent=a.outputs?"查看产物":"生成产物";
+  btn.addEventListener("click",function(){if(!a.outputs){a.outputs=Z.buildOutputs(a);toast("已按本地模板生成 5 路产物（演示）");}state.currentId=a.id;renderOut();renderLedger();setView("output");});
+  td.appendChild(btn);tr.appendChild(td);body.appendChild(tr);
+ });
+ $("zj-ledger-empty").hidden=rows.length>0;
+ var scope=state.filter.line==="all"?"全部项目线":LINES[state.filter.line].name;
+ var m=$("zj-metrics");m.innerHTML="";
+ [["当前筛选场次",rows.length+" 场"],["参与人数合计",people+" 人"],["已生成活动",gen+" / "+rows.length+" 场"],["已过审产物",approved+" 条"]].forEach(function(pair){var d=document.createElement("div");d.className="zj-metric";d.innerHTML="<b>"+Z.esc(pair[1])+"</b>"+Z.esc(pair[0]);m.appendChild(d);});
+ $("zj-ledger-scope").textContent="统计口径：当前筛选（"+scope+(state.filter.kw?"，关键词「"+state.filter.kw+"」":"")+"）。人数合计只来自台账行，模板不产生新数字。示例行均为虚构演示数据。";
+ $("zj-month-chip").textContent="示例台账 · "+state.activities.length+" 场";
+ console.assert(gen<=rows.length,"子集计数不得超过父集");
+ console.assert(people===rows.reduce(function(s,a){return s+a.count;},0),"人数合计须与台账同源");
+}
+function setView(v){state.view=v;root.dataset.view=v;var navs=root.querySelectorAll(".zj-nav button");for(var i=0;i<navs.length;i+=1){navs[i].setAttribute("aria-pressed",navs[i].dataset.view===v?"true":"false");navs[i].classList.toggle("is-active",navs[i].dataset.view===v);}$("zj-ledger").hidden=v!=="ledger";}
+/* ---- 表单 ---- */
+var F={name:$("zj-f-name"),line:$("zj-f-line"),host:$("zj-f-host"),date:$("zj-f-date"),count:$("zj-f-count"),place:$("zj-f-place"),d1:$("zj-f-d1"),d2:$("zj-f-d2"),d3:$("zj-f-d3"),quote:$("zj-f-quote"),photos:$("zj-f-photos"),auth:$("zj-f-auth")};
+function fieldWrap(el){return el.closest(".zj-field");}
+function mark(el,bad){var w=fieldWrap(el);if(w){w.classList.toggle("invalid",bad);}return !bad;}
+function validate(){
+ var okAll=true,first=null;
+ function chk(el,bad){var ok=mark(el,bad);if(!ok){okAll=false;if(!first){first=el;}}}
+ chk(F.name,!F.name.value.trim());
+ chk(F.host,!F.host.value.trim());
+ var dv=F.date.value;chk(F.date,!dv||dv>Z.TODAY);
+ var cv=F.count.value.trim();var cn=Number(cv);chk(F.count,!cv||!Number.isInteger(cn)||cn<1||cn>999);
+ chk(F.place,!F.place.value.trim());
+ chk(F.d1,!F.d1.value.trim());
+ var pv=F.photos.value.trim();var pn=Number(pv);chk(F.photos,pv===""||!Number.isInteger(pn)||pn<0||pn>9);
+ if(!okAll&&first){first.focus();toast("有必填项未通过校验，已在字段旁标出");}
+ return okAll;
+}
+function readForm(){return {name:F.name.value.trim(),line:F.line.value,host:F.host.value.trim(),date:F.date.value,count:Number(F.count.value),place:F.place.value.trim(),d1:F.d1.value.trim(),d2:F.d2.value.trim(),d3:F.d3.value.trim(),quote:F.quote.value.trim(),photos:Number(F.photos.value||0),auth:F.auth.checked};}
+function fillForm(rec){F.name.value=rec.name;F.line.value=rec.line;F.host.value=rec.host;F.date.value=rec.date;F.count.value=String(rec.count);F.place.value=rec.place;F.d1.value=rec.d1;F.d2.value=rec.d2||"";F.d3.value=rec.d3||"";F.quote.value=rec.quote||"";F.photos.value=String(rec.photos);F.auth.checked=!!rec.auth;var ws=root.querySelectorAll("#zj-form .zj-field.invalid");for(var i=0;i<ws.length;i+=1){ws[i].classList.remove("invalid");}}
+function clearForm(){fillForm({name:"",line:"zhiye",host:"",date:"",count:"",place:"",d1:"",d2:"",d3:"",quote:"",photos:3,auth:true});F.count.value="";}
+$("zj-generate").addEventListener("click",function(){
+ if(!validate()){return;}
+ var rec=Z.addActivity(readForm());
+ rec.outputs=Z.buildOutputs(rec);
+ state.currentId=rec.id;
+ var p=$("zj-progress");p.hidden=false;p.textContent="已套用「"+LINES[rec.line].name+"」项目线模板，生成 5 路产物（本地模板演示，非大模型）。"+(rec.auth?"":"注意：素材未授权，活动反馈已拦截。");
+ renderOut();renderLedger();setView("output");
+ toast(rec.auth?"已生成 5 路产物，全部为草稿，待人工过审":"已生成，但活动反馈因素材未授权被拦截");
+});
+$("zj-clear").addEventListener("click",function(){clearForm();toast("表单已清空，可记下一场");});
+var exBtns=root.querySelectorAll("[data-example]");
+for(var e=0;e<exBtns.length;e+=1){(function(btn){btn.addEventListener("click",function(){fillForm(EXAMPLES[btn.dataset.example]);setView("form");toast("已载入虚构示例，可直接点「生成五路内容」");});})(exBtns[e]);}
+/* ---- 过审 / 补授权 / 复制 ---- */
+KEYS.forEach(function(k){
+ var act=$("zj-actions-"+k);
+ act.querySelector("[data-approve]").addEventListener("click",function(){var rec=current();if(!rec||!rec.outputs||rec.outputs[k].status!=="draft"){return;}rec.outputs[k].status="ok";renderOut();renderLedger();toast(NAMES[k]+" 已过审，可进入发布流程（演示不落库）");});
+ act.querySelector("[data-copy]").addEventListener("click",function(){var rec=current();if(!rec||!rec.outputs){return;}openModal(NAMES[k]+" · 纯文本",plain(rec.outputs[k].html));});
+});
+(function(){var act=$("zj-actions-feedback");var re=document.createElement("button");re.type="button";re.className="zj-btn";re.dataset.reauth="1";re.hidden=true;re.textContent="标记已授权并重新生成";re.addEventListener("click",function(){var rec=current();if(!rec){return;}rec.auth=true;rec.outputs=Z.buildOutputs(rec);renderOut();renderLedger();toast("已补授权，活动反馈重新生成（其余产物同步刷新为草稿）");});act.insertBefore(re,act.firstChild);})();
+/* ---- 弹窗 ---- */
+var modal=$("zj-modal"),modalText=$("zj-modal-text"),lastFocus=null;
+function openModal(title,text){lastFocus=document.activeElement;$("zj-modal-title").textContent=title;modalText.value=text;modal.classList.add("open");modalText.focus();modalText.select();}
+function closeModal(){modal.classList.remove("open");if(lastFocus&&lastFocus.focus){lastFocus.focus();}}
+$("zj-modal-close").addEventListener("click",closeModal);
+$("zj-modal-select").addEventListener("click",function(){modalText.focus();modalText.select();});
+modal.addEventListener("click",function(ev){if(ev.target===modal){closeModal();}});
+document.addEventListener("keydown",function(ev){if(ev.key==="Escape"&&modal.classList.contains("open")){closeModal();}});
+/* ---- 台账筛选 ---- */
+$("zj-filter-line").addEventListener("change",function(){state.filter.line=this.value;renderLedger();});
+$("zj-filter-kw").addEventListener("input",function(){state.filter.kw=this.value.trim();renderLedger();});
+$("zj-filter-reset").addEventListener("click",function(){state.filter.line="all";state.filter.kw="";$("zj-filter-line").value="all";$("zj-filter-kw").value="";renderLedger();toast("筛选已清除");});
+/* ---- 视图与页签 ---- */
+var navs=root.querySelectorAll(".zj-nav button");
+for(var n=0;n<navs.length;n+=1){(function(btn){btn.addEventListener("click",function(){setView(btn.dataset.view);});})(navs[n]);}
+if(window.RaccoonViz&&typeof RaccoonViz.tabs==="function"){RaccoonViz.tabs(root);}else{
+ var tabs=root.querySelectorAll('[role="tab"]');
+ for(var t=0;t<tabs.length;t+=1){(function(tab){tab.addEventListener("click",function(){for(var j=0;j<tabs.length;j+=1){var sel=tabs[j]===tab;tabs[j].setAttribute("aria-selected",sel?"true":"false");$(tabs[j].getAttribute("aria-controls")).hidden=!sel;}});})(tabs[t]);}
+}
+/* ---- 初始化：预置一场已生成、两路已过审的示例 ---- */
+Z.seeded.outputs=Z.buildOutputs(Z.seeded);
+Z.seeded.outputs.wechat.status="ok";Z.seeded.outputs.story.status="ok";
+state.currentId=Z.seeded.id;
+renderOut();renderLedger();setView("output");
+console.assert(root.querySelectorAll('[role="tab"]').length===5,"五个产物页签须齐全");
+console.assert(state.activities.length===3,"初始台账应为 3 场示例");
+})();
+</script>
+</div>

@@ -1,0 +1,4 @@
+requests>=2.31.0
+PyYAML>=6.0.1
+# 说明：核心运行仅依赖上面两项（LLM 走 requests，配置走 yaml）。
+# 评测/真工具 CLI 为可选：各平台开发者 CLI 由你自己安装后通过 config.platforms 配置命令模板。

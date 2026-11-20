@@ -1,0 +1,249 @@
+<div id="qq-notice">
+<style>
+#qq-notice{--bg:#F6F1E3;--surface:#FFFDF6;--ink:#5A2D0C;--muted:#8F7358;--border:#E7DCC5;--accent:#FC9B00;--accent-deep:#B36E00;--sky:#79D3F2;--sky-soft:#E3F5FC;--leaf:#9BD500;--leaf-deep:#4F7A00;--purple:#B07CC6;--purple-soft:#F3E8F7;--danger:#C2452D;--danger-soft:#FBEAE5;max-width:1100px;margin:0 auto;padding:18px 16px 26px;background:var(--bg);color:var(--ink);font:14px/1.65 "PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;border-radius:20px}
+#qq-notice *{box-sizing:border-box}
+#qq-notice h1,#qq-notice h2,#qq-notice h3,#qq-notice p{margin:0}
+#qq-notice button{font:inherit;color:inherit}
+#qq-notice .qq-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+#qq-notice .qq-brand{display:flex;gap:10px;align-items:center}
+#qq-notice .qq-brand h1{font-size:20px;letter-spacing:.5px}
+#qq-notice .qq-sub{font-size:12px;color:var(--muted)}
+#qq-notice .qq-demo{font-size:12px;background:#FFF3DC;border:1px solid #F2CE93;color:var(--accent-deep);padding:3px 10px;border-radius:999px}
+#qq-notice .qq-note{font-size:12px;color:var(--muted);background:var(--surface);border:1px dashed var(--border);border-radius:10px;padding:7px 12px;margin-bottom:12px}
+#qq-notice .qq-note b{color:var(--danger)}
+#qq-notice .qq-main{display:grid;grid-template-columns:330px minmax(0,1fr);gap:14px;align-items:start}
+#qq-notice .qq-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px}
+#qq-notice .qq-card h2{font-size:15px;margin-bottom:4px}
+#qq-notice .qq-hint{font-size:12px;color:var(--muted);margin-bottom:12px}
+#qq-notice .qq-stu-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+#qq-notice .qq-stu{display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--border);background:#fff;border-radius:12px;padding:9px 12px;cursor:pointer;text-align:left;width:100%}
+#qq-notice .qq-stu.is-active{border-color:var(--accent);background:#FFF8EA;box-shadow:inset 0 0 0 1px var(--accent)}
+#qq-notice .qq-stu-name{font-weight:700;font-size:13.5px}
+#qq-notice .qq-stu-meta{font-size:11.5px;color:var(--muted)}
+#qq-notice .qq-stage-pill{font-size:11.5px;padding:2px 9px;border-radius:999px;white-space:nowrap}
+#qq-notice .qq-stage-pill.applied{background:var(--sky-soft);color:#1D6E8C}
+#qq-notice .qq-stage-pill.queued{background:#FFF3DC;color:var(--accent-deep)}
+#qq-notice .qq-stage-pill.matched{background:#F0F7DC;color:var(--leaf-deep)}
+#qq-notice .qq-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+#qq-notice .qq-filter button{border:1px solid var(--border);background:#fff;font-size:12px;padding:4px 11px;border-radius:999px;cursor:pointer}
+#qq-notice .qq-filter button[aria-pressed="true"]{background:var(--ink);color:#FFF6E6;border-color:var(--ink)}
+#qq-notice .qq-metrics{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+#qq-notice .qq-metric{background:var(--purple-soft);border:1px solid #E0CCE9;border-radius:10px;padding:5px 11px;font-size:11.5px;color:#7A3E8F}
+#qq-notice .qq-metric b{font-size:15px;color:var(--ink);margin-right:3px}
+#qq-notice .qq-empty{color:var(--muted);font-size:13px;padding:20px 8px;text-align:center}
+#qq-notice .qq-flow{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+#qq-notice .qq-flow-step{font-size:12px;border:1px solid var(--border);background:#fff;border-radius:999px;padding:4px 12px;color:var(--muted)}
+#qq-notice .qq-flow-step.done{background:var(--purple-soft);border-color:#E0CCE9;color:#7A3E8F}
+#qq-notice .qq-flow-step.now{background:var(--purple);border-color:var(--purple);color:#fff;font-weight:700}
+#qq-notice .qq-flow-arrow{color:var(--muted);font-size:12px}
+#qq-notice .qq-detail-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;margin-bottom:8px}
+#qq-notice .qq-detail-meta{font-size:12px;color:var(--muted)}
+#qq-notice .qq-vars{border:1px solid var(--border);border-radius:12px;background:#fff;padding:10px 12px;margin-bottom:12px;font-size:12.5px}
+#qq-notice .qq-vars h3{font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:6px}
+#qq-notice .qq-vars-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 12px}
+#qq-notice .qq-var b{color:#7A3E8F}
+#qq-notice .qq-letter{border:1px solid #E0CCE9;border-radius:14px;background:#fff;padding:18px;position:relative}
+#qq-notice .qq-letter::before{content:"";position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(90deg,#B07CC6,#79D3F2);border-radius:14px 14px 0 0}
+#qq-notice .qq-letter h3{font-size:15.5px;font-weight:800;margin:4px 0 8px;text-wrap:balance}
+#qq-notice .qq-letter p{margin:0 0 7px}
+#qq-notice .qq-letter ul{margin:0 0 7px;padding-left:20px}
+#qq-notice .qq-letter li{margin-bottom:3px}
+#qq-notice .qq-var-inline{background:var(--purple-soft);border-bottom:1px solid #C9A3D8;padding:0 2px;border-radius:3px;white-space:nowrap}
+#qq-notice .qq-sign{font-size:12px;color:var(--muted);margin-top:10px;border-top:1px dashed var(--border);padding-top:8px}
+#qq-notice .qq-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+#qq-notice .qq-btn{border:none;background:var(--accent);color:#4A2606;font-weight:700;padding:10px 18px;border-radius:999px;cursor:pointer}
+#qq-notice .qq-btn:hover{filter:brightness(1.05)}
+#qq-notice .qq-btn:disabled{opacity:.55;cursor:not-allowed}
+#qq-notice .qq-btn-ghost{border:1px solid var(--border);background:#fff;padding:9px 14px;border-radius:999px;cursor:pointer;font-size:13px}
+#qq-notice .qq-btn-purple{border:none;background:var(--purple);color:#fff;font-weight:700;padding:10px 16px;border-radius:999px;cursor:pointer}
+#qq-notice .qq-tip{font-size:12px;color:var(--muted)}
+#qq-notice .qq-badge{font-size:12px;padding:2px 10px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--muted);white-space:nowrap}
+#qq-notice .qq-badge.sent{background:#F0F7DC;border-color:#C4E08A;color:var(--leaf-deep)}
+#qq-notice .qq-badge.unsent{background:#FFF3DC;border-color:#F2CE93;color:var(--accent-deep)}
+#qq-notice .qq-waitinfo{border:1px dashed #E0CCE9;background:var(--purple-soft);border-radius:12px;padding:9px 12px;font-size:12.5px;color:#7A3E8F;margin-top:12px}
+#qq-notice .qq-modal{display:none;position:fixed;inset:0;background:rgba(60,35,10,.45);z-index:60;align-items:center;justify-content:center;padding:16px}
+#qq-notice .qq-modal.open{display:flex}
+#qq-notice .qq-modal-card{background:var(--surface);border-radius:16px;max-width:560px;width:100%;max-height:82vh;display:flex;flex-direction:column;padding:16px;gap:10px}
+#qq-notice .qq-modal-card h3{font-size:15px}
+#qq-notice .qq-modal-card textarea{flex:1;min-height:220px;border:1px solid var(--border);border-radius:10px;padding:10px;font:12.5px/1.6 inherit;resize:none;background:#fff;color:var(--ink)}
+#qq-notice .qq-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#FFF6E6;font-size:13px;padding:9px 16px;border-radius:999px;z-index:70;max-width:88vw;text-align:center}
+#qq-notice .qq-foot{font-size:11.5px;color:var(--muted);margin-top:14px}
+#qq-notice button:focus-visible{outline:2px solid var(--accent-deep);outline-offset:1px}
+@media (max-width:879px){#qq-notice .qq-main{display:block}#qq-notice .qq-card+.qq-card{margin-top:14px}}
+</style>
+<header class="qq-head">
+  <div class="qq-brand">
+    <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><path d="M6 30 Q20 12 34 30" fill="none" stroke="#B07CC6" stroke-width="4" stroke-linecap="round"/><line x1="10" y1="30" x2="10" y2="34" stroke="#5A2D0C" stroke-width="2.5" stroke-linecap="round"/><line x1="30" y1="30" x2="30" y2="34" stroke="#5A2D0C" stroke-width="2.5" stroke-linecap="round"/><circle cx="20" cy="19" r="3.4" fill="#FC9B00"/><path d="M20 15.5 C20 12 18 10.5 16 10.5 C16 13 18 14.8 20 15.5 Z" fill="#9BD500"/></svg>
+    <div><h1>青桥进度信</h1><p class="qq-sub">报名之后，不再失联 · 每个阶段一封短信</p></div>
+  </div>
+  <span class="qq-demo">演示模式 · 纯模板 + 变量替换</span>
+</header>
+<p class="qq-note">预研打样 D3 · 对应痛点假设 <b>P8「等待期内容真空」（外部类推，尚未验证）</b>。青桥计划是匹配型项目：报名 → 审核 → 排队等导师 → 匹配成功。本工具为每个阶段准备一封可直接发的通知，变量自动从批次表取。<b>演示中的等待天数、导师、学员全部虚构</b>；真实匹配周期需在访谈中确认（问题 B7）。</p>
+<div class="qq-main">
+<section class="qq-card" aria-label="学员批次列表">
+  <h2>第 28 期 · 匹配批次</h2>
+  <p class="qq-hint">点选学员查看对应阶段的进度信；「推进阶段」演示状态流转。</p>
+  <div class="qq-metrics" id="qq-metrics" aria-live="polite"></div>
+  <div class="qq-filter" role="group" aria-label="按阶段筛选">
+    <button type="button" data-stage="all" aria-pressed="true">全部</button>
+    <button type="button" data-stage="applied" aria-pressed="false">已报名</button>
+    <button type="button" data-stage="queued" aria-pressed="false">排队中</button>
+    <button type="button" data-stage="matched" aria-pressed="false">已匹配</button>
+  </div>
+  <div class="qq-stu-list" id="qq-stu-list"></div>
+  <p class="qq-empty" id="qq-empty" hidden>该阶段暂无学员。点「全部」查看整批。</p>
+</section>
+<section class="qq-card" aria-label="进度信详情">
+  <div class="qq-detail-head"><h2 id="qq-detail-title">进度信</h2><span class="qq-badge" id="qq-sent-badge">—</span></div>
+  <p class="qq-detail-meta" id="qq-detail-meta"></p>
+  <div class="qq-flow" id="qq-flow" aria-label="阶段进度"></div>
+  <div class="qq-vars" id="qq-vars"><h3>本封信的变量（自动取自批次表，模板不改数字）</h3><div class="qq-vars-grid" id="qq-vars-grid"></div></div>
+  <div class="qq-letter" id="qq-letter"></div>
+  <div class="qq-waitinfo" id="qq-waitinfo"></div>
+  <div class="qq-actions">
+    <button type="button" class="qq-btn-purple" id="qq-advance">推进到下一阶段</button>
+    <button type="button" class="qq-btn" id="qq-send">标记本封已发送</button>
+    <button type="button" class="qq-btn-ghost" id="qq-copy">复制纯文本</button>
+  </div>
+  <p class="qq-tip" style="margin-top:8px">发送为演示标记，不真实发消息；正式版可对接机构现有微信群 / 短信流程。</p>
+</section>
+</div>
+<div class="qq-modal" id="qq-modal" role="dialog" aria-modal="true" aria-labelledby="qq-modal-title">
+  <div class="qq-modal-card">
+    <h3 id="qq-modal-title">复制进度信纯文本</h3>
+    <p class="qq-hint" style="margin:0">沙箱内剪贴板受限：请全选下方文本后手动复制（Ctrl+A → Ctrl+C）。</p>
+    <textarea id="qq-modal-text" readonly aria-label="进度信纯文本"></textarea>
+    <div class="qq-actions"><button type="button" class="qq-btn" id="qq-modal-select">全选文本</button><button type="button" class="qq-btn-ghost" id="qq-modal-close">关闭</button></div>
+  </div>
+</div>
+<div class="qq-toast" id="qq-toast" role="status" hidden></div>
+<p class="qq-foot">G04 内容生产方向 · 预研打样 D3 ｜ 依据：机构画像与需求预研 P8（源自蓝信封通信大使一手经验的类推：匹配型项目等待期 30–60 天需内容维系）｜ 若访谈推翻 P8，本工具不进需求文档 ｜ 学员、导师、天数均为虚构示例</p>
+</div><script>
+(function(){
+"use strict";
+var root=document.getElementById("qq-notice");if(!root){return;}
+var TODAY="2026-11-19";
+var STAGES=["applied","queued","matched"];
+var STAGE_NAMES={applied:"已报名",queued:"排队中",matched:"已匹配"};
+/* 虚构学员批次（第 28 期）：waitDays 为演示假设，真实周期未知 */
+var STUDENTS=[
+ {id:"s1",name:"王同学",school:"宁夏大学 · 大三",wish:"互联网产品方向",appliedAt:"2026-11-14",stage:"applied",waitDays:0,mentor:null,etaDays:null,sent:{}},
+ {id:"s2",name:"李同学",school:"北方民族大学 · 大二",wish:"新媒体运营方向",appliedAt:"2026-11-10",stage:"queued",waitDays:9,mentor:null,etaDays:21,sent:{applied:true}},
+ {id:"s3",name:"马同学",school:"宁夏医科大学 · 大四",wish:"医疗健康行业",appliedAt:"2026-11-06",stage:"queued",waitDays:13,mentor:null,etaDays:17,sent:{applied:true}},
+ {id:"s4",name:"张同学",school:"银川科技学院 · 大三",wish:"财务 / 审计方向",appliedAt:"2026-10-30",stage:"matched",waitDays:16,mentor:"陈老师（会计师事务所审计经理，从业 9 年）",etaDays:0,sent:{applied:true,queued:true},matchedAt:"2026-11-15"}
+];
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function v(s){return '<span class="qq-var-inline">'+esc(s)+"</span>";}
+function fmtDate(iso){var p=iso.split("-");return Number(p[1])+" 月 "+Number(p[2])+" 日";}
+/* 三态模板：变量只来自学员行，等待天数为演示假设并显式标注 */
+function buildLetter(st){
+ if(st.stage==="applied"){
+  return {title:"报名收到啦｜青桥计划第 28 期",body:
+  "<p>"+v(st.name)+"，你好呀：</p>"
+  +"<p>我们在 "+v(fmtDate(st.appliedAt))+" 收到了你的青桥计划报名（意向方向："+v(st.wish)+"）。这一步你已经完成了，接下来交给我们。</p>"
+  +"<p><b>接下来会发生什么：</b></p><ul><li>项目组核对报名信息（一般 3 个工作日内）</li><li>通过后进入导师匹配队列，我们会再发一封信告诉你排队进度</li><li>匹配成功后，你会收到导师介绍和第一次 1v1 的时间</li></ul>"
+  +"<p>这期间不用反复刷消息，每个节点我们都会主动告诉你。</p>"};
+ }
+ if(st.stage==="queued"){
+  return {title:"匹配进行中｜你的申请到哪一步了",body:
+  "<p>"+v(st.name)+"，来同步一下进度：</p>"
+  +"<p>你的申请已通过审核，"+v(fmtDate(st.appliedAt))+" 进入匹配队列，目前已等待 "+v(String(st.waitDays))+" 天。按本期节奏，预计还需 "+v(String(st.etaDays))+" 天左右（演示假设，以项目组实际通知为准）。</p>"
+  +"<p><b>为什么需要等：</b>我们按你的意向方向（"+v(st.wish)+"）一对一找合适的职场导师，宁缺毋滥——匹配质量比速度重要。</p>"
+  +"<p><b>等待期可以先做的一件事：</b>把最想问导师的 3 个问题写下来。第一次 1v1 只有 40 分钟，好问题能让它值回票价。</p>"
+  +"<p>下一封信，要么告诉你还在排队（附最新进度），要么就是好消息。</p>"};
+ }
+ return {title:"匹配成功｜认识一下你的职场导师",body:
+ "<p>"+v(st.name)+"，好消息：</p>"
+ +"<p>历经 "+v(String(st.waitDays))+" 天匹配，你的青桥导师确定了——"+v(st.mentor)+"。匹配完成日："+v(fmtDate(st.matchedAt))+"。</p>"
+ +"<p><b>接下来三步：</b></p><ul><li>项目组拉群，你和导师先互相打个招呼</li><li>约定第一次 1v1 时间（40 分钟，线上）</li><li>带着你准备好的 3 个问题来，聊完写一段复盘发给我们</li></ul>"
+ +"<p>从报名到今天，你等了 "+v(String(st.waitDays))+" 天。谢谢你的耐心，桥上见。</p>"};
+}
+window.__qq={STAGES:STAGES,STAGE_NAMES:STAGE_NAMES,STUDENTS:STUDENTS,buildLetter:buildLetter,esc:esc,v:v,fmtDate:fmtDate,TODAY:TODAY};
+})();
+</script>
+<script>
+(function(){
+"use strict";
+var root=document.getElementById("qq-notice");var Q=window.__qq;if(!root||!Q){return;}
+var STUDENTS=Q.STUDENTS,STAGES=Q.STAGES,STAGE_NAMES=Q.STAGE_NAMES;
+var $=function(id){return document.getElementById(id);};
+var state={currentId:"s2",filter:"all"};
+var toastTimer=null;
+function toast(msg){var t=$("qq-toast");t.textContent=msg;t.hidden=false;if(toastTimer){clearTimeout(toastTimer);}toastTimer=setTimeout(function(){t.hidden=true;},2600);}
+function plain(html){var s=html.replace(/<br\s*\/?>/g,"\n").replace(/<\/(p|h3|li|ul|div)>/g,"\n").replace(/<[^>]+>/g,"");var ta=document.createElement("textarea");ta.innerHTML=s;return ta.value.replace(/\n{3,}/g,"\n\n").replace(/[ \t]+\n/g,"\n").trim();}
+function current(){for(var i=0;i<STUDENTS.length;i+=1){if(STUDENTS[i].id===state.currentId){return STUDENTS[i];}}return null;}
+function visible(){return STUDENTS.filter(function(s){return state.filter==="all"||s.stage===state.filter;});}
+function renderList(){
+ var list=$("qq-stu-list");list.innerHTML="";
+ var rows=visible();
+ rows.forEach(function(s){
+  var b=document.createElement("button");b.type="button";b.className="qq-stu"+(s.id===state.currentId?" is-active":"");b.setAttribute("aria-pressed",s.id===state.currentId?"true":"false");
+  b.innerHTML="<span><span class='qq-stu-name'>"+Q.esc(s.name)+"</span><br><span class='qq-stu-meta'>"+Q.esc(s.school)+"｜"+Q.esc(s.wish)+"</span></span><span class='qq-stage-pill "+s.stage+"'>"+STAGE_NAMES[s.stage]+"</span>";
+  b.addEventListener("click",function(){state.currentId=s.id;renderList();renderDetail();});
+  list.appendChild(b);
+ });
+ $("qq-empty").hidden=rows.length>0;
+ var counts={applied:0,queued:0,matched:0};STUDENTS.forEach(function(s){counts[s.stage]+=1;});
+ var m=$("qq-metrics");m.innerHTML="";
+ [["整批",STUDENTS.length],["已报名",counts.applied],["排队中",counts.queued],["已匹配",counts.matched]].forEach(function(p){var d=document.createElement("span");d.className="qq-metric";d.innerHTML="<b>"+p[1]+"</b>"+Q.esc(p[0]);m.appendChild(d);});
+ console.assert(counts.applied+counts.queued+counts.matched===STUDENTS.length,"阶段计数须等于整批");
+ var fb=root.querySelectorAll(".qq-filter button");
+ for(var i=0;i<fb.length;i+=1){fb[i].setAttribute("aria-pressed",fb[i].dataset.stage===state.filter?"true":"false");}
+}
+function renderDetail(){
+ var st=current();if(!st){return;}
+ $("qq-detail-title").textContent="进度信 · "+st.name;
+ $("qq-detail-meta").textContent=st.school+"｜意向："+st.wish+"｜报名于 "+st.appliedAt+"｜当前阶段："+STAGE_NAMES[st.stage];
+ var flow=$("qq-flow");flow.innerHTML="";
+ var idx=STAGES.indexOf(st.stage);
+ STAGES.forEach(function(sg,i){
+  if(i>0){var a=document.createElement("span");a.className="qq-flow-arrow";a.textContent="→";flow.appendChild(a);}
+  var d=document.createElement("span");d.className="qq-flow-step"+(i<idx?" done":i===idx?" now":"");d.textContent=STAGE_NAMES[sg]+(st.sent[sg]?" ✓":"");flow.appendChild(d);
+ });
+ var letter=Q.buildLetter(st);
+ $("qq-letter").innerHTML="<h3>"+Q.esc(letter.title)+"</h3>"+letter.body+"<p class='qq-sign'>青桥计划项目组 · C公益｜本封为模板演示稿，发送前请项目专员核对变量</p>";
+ var vars=[];
+ vars.push(["姓名",st.name]);vars.push(["报名日",st.appliedAt]);vars.push(["意向方向",st.wish]);
+ if(st.stage!=="applied"){vars.push(["已等待",st.waitDays+" 天"]);}
+ if(st.stage==="queued"){vars.push(["预计还需",st.etaDays+" 天（假设）"]);}
+ if(st.stage==="matched"){vars.push(["导师",st.mentor]);vars.push(["匹配日",st.matchedAt]);}
+ var vg=$("qq-vars-grid");vg.innerHTML="";
+ vars.forEach(function(p){var d=document.createElement("span");d.className="qq-var";d.innerHTML=Q.esc(p[0])+"：<b>"+Q.esc(p[1])+"</b>";vg.appendChild(d);});
+ var wi=$("qq-waitinfo");
+ if(st.stage==="queued"){wi.hidden=false;wi.textContent="等待期维系提示：该学员已等 "+st.waitDays+" 天。若超过 14 天仍在排队，建议加发一条「进度快报」——这正是 P8 假设要验证的流失点（演示阈值，非机构真实规则）。";}
+ else if(st.stage==="matched"){wi.hidden=false;wi.textContent="匹配后 7 天内是首次 1v1 的关键期；本信发出后建议项目组 3 天内跟进拉群（演示建议）。";}
+ else{wi.hidden=true;}
+ var badge=$("qq-sent-badge");var sent=!!st.sent[st.stage];
+ badge.className="qq-badge "+(sent?"sent":"unsent");badge.textContent=sent?"本阶段信已发送":"本阶段信未发送";
+ $("qq-send").disabled=sent;$("qq-send").textContent=sent?"已发送":"标记本封已发送";
+ var adv=$("qq-advance");var last=st.stage==="matched";
+ adv.disabled=last;adv.textContent=last?"已是最终阶段":"推进到下一阶段";
+}
+/* ---- 事件 ---- */
+var fb=root.querySelectorAll(".qq-filter button");
+for(var i=0;i<fb.length;i+=1){(function(btn){btn.addEventListener("click",function(){state.filter=btn.dataset.stage;var rows=visible();if(rows.length>0){var stillThere=rows.some(function(s){return s.id===state.currentId;});if(!stillThere){state.currentId=rows[0].id;}}renderList();renderDetail();});})(fb[i]);}
+$("qq-advance").addEventListener("click",function(){
+ var st=current();if(!st||st.stage==="matched"){return;}
+ var idx=STAGES.indexOf(st.stage);st.stage=STAGES[idx+1];
+ if(st.stage==="queued"){st.waitDays=1;st.etaDays=29;}
+ if(st.stage==="matched"){st.waitDays=st.waitDays+st.etaDays;st.etaDays=0;st.mentor="待项目组指派导师（演示占位）";st.matchedAt=Q.TODAY;}
+ /* 若当前筛选会隐藏该学员，切换筛选保持可见 */
+ if(state.filter!=="all"&&state.filter!==st.stage){state.filter=st.stage;toast("已推进到「"+STAGE_NAMES[st.stage]+"」，筛选同步切换以保持该学员可见");}
+ else{toast("已推进到「"+STAGE_NAMES[st.stage]+"」，新阶段的信未发送");}
+ renderList();renderDetail();
+});
+$("qq-send").addEventListener("click",function(){var st=current();if(!st||st.sent[st.stage]){return;}st.sent[st.stage]=true;renderList();renderDetail();toast("已标记发送（演示，不真实发消息）");});
+$("qq-copy").addEventListener("click",function(){var st=current();if(!st){return;}var letter=Q.buildLetter(st);openModal(letter.title,plain("<h3>"+letter.title+"</h3>"+letter.body));});
+/* ---- 弹窗 ---- */
+var modal=$("qq-modal"),modalText=$("qq-modal-text"),lastFocus=null;
+function openModal(title,text){lastFocus=document.activeElement;$("qq-modal-title").textContent=title;modalText.value=text;modal.classList.add("open");modalText.focus();modalText.select();}
+function closeModal(){modal.classList.remove("open");if(lastFocus&&lastFocus.focus){lastFocus.focus();}}
+$("qq-modal-close").addEventListener("click",closeModal);
+$("qq-modal-select").addEventListener("click",function(){modalText.focus();modalText.select();});
+modal.addEventListener("click",function(ev){if(ev.target===modal){closeModal();}});
+document.addEventListener("keydown",function(ev){if(ev.key==="Escape"&&modal.classList.contains("open")){closeModal();}});
+/* ---- 初始化 ---- */
+renderList();renderDetail();
+console.assert(STUDENTS.length===4,"示例批次应为4人");
+})();
+</script>

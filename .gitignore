@@ -1,0 +1,38 @@
+# 飞书导出的原始数据（含机构/成员信息，不入库）
+data/raw/
+data/tmp/
+
+# 本地环境
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+secrets.local.json
+config.json
+tools/
+
+# 编辑器与系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# 内容工作台构建产物与运行时数据
+workbench/node_modules/
+workbench/.next/
+workbench/.env
+workbench/.env.local
+workbench/.env.*.local
+workbench/data/
+workbench/cookies.txt
+workbench/*.db
+workbench/*.db-wal
+workbench/*.db-shm
+
+# 协作工具临时产物
+.box-agent/
+.box-agent-scratch/
+.workbuddy/
+.screenshots/
