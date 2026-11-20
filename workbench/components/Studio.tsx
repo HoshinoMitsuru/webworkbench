@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   EMPTY_ACTIVITY,
-  EXAMPLE_ACTIVITY,
   type ActivityInput,
   type AudienceBlock,
   type BlockKey,
@@ -67,11 +66,13 @@ function escapeRegExp(value: string): string {
 export default function Studio({
   liveModel,
   paused,
-  user
+  user,
+  exampleAvailable
 }: {
   liveModel: boolean;
   paused: boolean;
   user: { id: string; name: string };
+  exampleAvailable: boolean;
 }) {
   const [tab, setTab] = useState<Tab>('copy');
   const [activity, setActivity] = useState<ActivityInput>(EMPTY_ACTIVITY);
@@ -97,6 +98,7 @@ export default function Studio({
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [libraryBusy, setLibraryBusy] = useState(false);
   const [libraryError, setLibraryError] = useState('');
+  const [exampleBusy, setExampleBusy] = useState(false);
 
   const snapshot = JSON.stringify({ activity, results, audience });
   const dirty = snapshot !== savedSnapshot;
@@ -356,8 +358,26 @@ export default function Studio({
   }
 
   function fillExample() {
-    setActivity(EXAMPLE_ACTIVITY);
-    setNotice('已填入示例资料，可直接点「生成内容」看效果。');
+    if (exampleBusy) return;
+    setExampleBusy(true);
+    fetch('/api/example', { cache: 'no-store' })
+      .then(async (response) => {
+        if (response.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+        const data = (await response.json().catch(() => ({}))) as {
+          activity?: Partial<ActivityInput>;
+          error?: string;
+        };
+        if (!response.ok || !data.activity) throw new Error(data.error || '示例资料当前不可用');
+        setActivity({ ...EMPTY_ACTIVITY, ...data.activity });
+        setNotice('已填入示例资料（虚构内容），可直接点「生成内容」看效果。');
+      })
+      .catch((caught: unknown) => {
+        setNotice(caught instanceof Error ? caught.message : '示例资料当前不可用');
+      })
+      .finally(() => setExampleBusy(false));
   }
 
   function clearAll() {
@@ -944,9 +964,16 @@ export default function Studio({
             </div>
 
             <div className="form-actions" style={{ marginTop: 8 }}>
-              <button type="button" className="btn btn-ghost btn-small" onClick={fillExample}>
-                载入示例资料
-              </button>
+              {exampleAvailable ? (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-small"
+                  onClick={fillExample}
+                  disabled={exampleBusy}
+                >
+                  {exampleBusy ? '载入中…' : '载入示例资料'}
+                </button>
+              ) : null}
               <button type="button" className="btn btn-ghost btn-small" onClick={() => fileInputRef.current?.click()}>
                 导入方案文本
               </button>
@@ -1014,8 +1041,12 @@ export default function Studio({
                     <h3>右侧会放生成结果</h3>
                     <p>
                       填好左侧资料，点「生成内容」，这里会出现公众号推文、小红书笔记和社群话术。
-                      <br />
-                      第一次用可以点「载入示例资料」直接看效果。
+                      {exampleAvailable ? (
+                        <>
+                          <br />
+                          第一次用可以点「载入示例资料」直接看效果。
+                        </>
+                      ) : null}
                     </p>
                   </div>
                 </div>

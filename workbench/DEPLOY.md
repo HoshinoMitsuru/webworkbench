@@ -64,6 +64,15 @@ docker compose exec app node scripts/create-user.mjs zhangsan 'Passw0rd2026' 张
 
 浏览器访问 `http://<ECS_IP>/`，用刚创建的账号登录。
 
+不需要示例数据。生产默认不部署 `examples/`，页面上的「载入示例资料」会自动隐藏；如需临时演示，把仓库根目录的 `examples/` 上传到 ECS 并挂载：
+
+```yaml
+# docker-compose.yml 的 app 服务下
+volumes:
+  - ./data:/app/data
+  - ../examples:/app/examples:ro
+```
+
 ## 4. 配置 HTTPS（必须）
 
 登录 Cookie 在生产环境默认带 `Secure`，只有 HTTPS 页面才能保存。上线前请配置证书，任选一种：

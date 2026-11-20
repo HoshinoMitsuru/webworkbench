@@ -49,6 +49,8 @@ npm run dev
 
 数据默认写在 `workbench/data/workbench.db`（可用 `DATA_DIR` 改）。
 
+「载入示例资料」读取的是仓库根目录 `examples/activity.sample.json`，**不在工程代码里写死**，也不打进构建产物。该文件不存在时按钮自动隐藏，生产部署默认不带示例。示例用法见 `examples/README.md`。
+
 未配置模型时页面显示「演示模式」，用本地模板产出成稿，可完整走通流程；配置模型后自动切换为「已接入模型」。
 
 创建正式账号：
