@@ -1,0 +1,68 @@
+/* ---------- 说明书 ---------- */
+
+.doc-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 28px 24px 60px;
+}
+
+.doc-page .back {
+  font-size: 12px;
+}
+
+.doc-page h1 {
+  font-family: var(--font-serif);
+  font-size: 30px;
+  margin: 18px 0 6px;
+}
+
+.doc-page .doc-sub {
+  color: var(--muted);
+  margin: 0 0 26px;
+  font-size: 13px;
+}
+
+.doc-page section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+}
+
+.doc-page h2 {
+  font-size: 15px;
+  margin: 0 0 10px;
+}
+
+.doc-page p,
+.doc-page li {
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--ink-soft);
+}
+
+.doc-page ul {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.doc-page .limit {
+  border-color: #f0c9bd;
+  background: var(--danger-soft);
+}
+
+.doc-page .limit p,
+.doc-page .limit li {
+  color: var(--danger);
+}
+
+.doc-page code {
+  background: var(--surface-2);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+}
+

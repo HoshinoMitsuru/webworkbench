@@ -1,5 +1,17 @@
 import type { Metadata } from 'next';
-import './globals.css';
+import './styles/base.css';
+import './styles/login.css';
+import './styles/brand.css';
+import './styles/topbar.css';
+import './styles/workspace.css';
+import './styles/panel.css';
+import './styles/progress.css';
+import './styles/results.css';
+import './styles/poster.css';
+import './styles/script.css';
+import './styles/help.css';
+import './styles/library.css';
+import './styles/responsive.css';
 
 export const metadata: Metadata = {
   title: 'C公益内容工作台',

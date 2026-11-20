@@ -1,0 +1,67 @@
+:root {
+  --bg: #f6f1e3;
+  --surface: #fffdf6;
+  --surface-2: #fff8e8;
+  --ink: #5a2d0c;
+  --ink-soft: #7a5230;
+  --muted: #8f7358;
+  --border: #e7dcc5;
+  --border-strong: #d8c7a6;
+  --accent: #fc9b00;
+  --accent-deep: #b36e00;
+  --accent-soft: #fff0d6;
+  --sky: #79d3f2;
+  --sky-soft: #e3f5fc;
+  --leaf: #9bd500;
+  --leaf-deep: #4f7a00;
+  --danger: #c2452d;
+  --danger-soft: #fbeae5;
+  --shadow: 0 10px 30px rgba(90, 45, 12, 0.07);
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --font-sans: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+  --font-serif: "Noto Serif SC", "Songti SC", "SimSun", serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent-deep);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+

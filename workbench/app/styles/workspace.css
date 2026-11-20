@@ -1,0 +1,97 @@
+/* ---------- 工作区 ---------- */
+
+.workspace {
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 20px 24px 48px;
+  display: grid;
+  grid-template-columns: 210px minmax(340px, 430px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  flex: 1;
+}
+
+.rail {
+  position: sticky;
+  top: 78px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rail-title {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  padding: 0 4px;
+}
+
+.rail-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+
+.rail-btn:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.rail-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.rail-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--sky-soft);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.rail-btn.active .rail-icon {
+  background: var(--accent);
+  color: #fff;
+}
+
+.rail-btn .rail-label {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.rail-btn .rail-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.rail-note {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--sky-soft);
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.rail-note strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+

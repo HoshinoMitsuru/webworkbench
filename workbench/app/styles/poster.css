@@ -1,0 +1,122 @@
+/* ---------- 海报 ---------- */
+
+.poster-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+  gap: 16px;
+  align-items: start;
+}
+
+.poster-preview {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+
+.poster-preview canvas {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  height: auto;
+  border-radius: 12px;
+  background: #eee;
+}
+
+.poster-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.template-btn {
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 8px 6px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.template-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-weight: 600;
+}
+
+.template-swatch {
+  height: 44px;
+  border-radius: 7px;
+  margin-bottom: 6px;
+}
+
+.swatch-sky {
+  background: linear-gradient(135deg, #79d3f2 0 60%, #fffdf6 60%);
+}
+
+.swatch-soil {
+  background: linear-gradient(135deg, #5a2d0c 0 70%, #fc9b00 70%);
+}
+
+.swatch-paper {
+  background: linear-gradient(135deg, #f6f1e3 0 55%, #9bd500 55% 70%, #fc9b00 70%);
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.switch {
+  position: relative;
+  width: 38px;
+  height: 21px;
+  border-radius: 999px;
+  background: var(--border-strong);
+  border: none;
+  transition: background 0.15s;
+  flex: 0 0 auto;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+
+.switch.on {
+  background: var(--leaf-deep);
+}
+
+.switch.on::after {
+  transform: translateX(17px);
+}
+
+.poster-meta {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
