@@ -1,7 +1,31 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { SESSION_COOKIE, verifySessionToken } from '@/lib/auth';
+import {
+  SESSION_COOKIE,
+  SESSION_TTL_SECONDS,
+  createSessionToken,
+  sessionCookieOptions,
+  verifySessionToken,
+  type SessionUser
+} from '@/lib/auth';
 
 const PUBLIC_API = ['/api/health', '/api/auth/login', '/api/auth/logout'];
+const RENEW_THRESHOLD_MS = (SESSION_TTL_SECONDS / 2) * 1000;
+
+/** 会话剩余不足一半时自动续签，长期使用的成员不会被强制重新登录 */
+async function withSessionRenewal(
+  request: NextRequest,
+  response: NextResponse,
+  session: SessionUser | null
+): Promise<NextResponse> {
+  if (!session) return response;
+  if (session.exp - Date.now() > RENEW_THRESHOLD_MS) return response;
+
+  const secure =
+    request.nextUrl.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
+  const token = await createSessionToken({ id: session.uid, name: session.name });
+  response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(secure));
+  return response;
+}
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
@@ -13,7 +37,7 @@ export async function middleware(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: '未登录或会话已过期，请重新登录。' }, { status: 401 });
     }
-    return NextResponse.next();
+    return withSessionRenewal(request, NextResponse.next(), session);
   }
 
   if (!session) {
@@ -24,7 +48,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.next();
+  return withSessionRenewal(request, NextResponse.next(), session);
 }
 
 export const config = {

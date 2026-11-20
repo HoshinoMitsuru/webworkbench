@@ -38,8 +38,6 @@ AUTH_SECRET=<32 位以上随机串，可用 openssl rand -hex 32 生成>
 ARK_API_KEY=<方舟 Key>
 ARK_MODEL=<接入点 ID 或模型 ID>
 DATA_DIR=/app/data
-# 首次先用 HTTP 联调时可临时设为 0；接入 HTTPS 后删除该行
-# COOKIE_SECURE=0
 ```
 
 > `AUTH_SECRET` 一旦投入使用不要随意更换，更换会让所有人重新登录。
@@ -73,9 +71,9 @@ volumes:
   - ../examples:/app/examples:ro
 ```
 
-## 4. 配置 HTTPS（必须）
+## 4. 配置 HTTPS（强烈建议）
 
-登录 Cookie 在生产环境默认带 `Secure`，只有 HTTPS 页面才能保存。上线前请配置证书，任选一种：
+登录 Cookie 会根据访问协议自动加 `Secure`：HTTPS 访问时自动安全、HTTP 访问时仍可登录，因此不配置证书也能先用起来。但账号密码与活动资料会在公网明文传输，正式对外使用前请配置证书，任选一种：
 
 ### 方案 A：宿主机已有 Nginx / 使用云厂商证书
 
@@ -148,7 +146,7 @@ docker compose start app
 
 | 现象 | 原因与处理 |
 |---|---|
-| 登录后立刻跳回登录页 | 用 HTTP 访问但 Cookie 带 `Secure`。配置 HTTPS，或临时在 `.env` 设 `COOKIE_SECURE=0` 后 `docker compose up -d` |
+| 登录后立刻跳回登录页 | 常见原因是更换了 `AUTH_SECRET` 或换了域名，旧 Cookie 失效。重新登录即可；确认部署后 `AUTH_SECRET` 不再变动 |
 | 登录页提示「尚未创建账号」 | 还没建号，执行第 3 步的 `create-user` |
 | `/api/health` 返回 503 | `./data` 目录权限或磁盘问题，检查 `docker compose logs app` |
 | 保存提示版本冲突 | 同事已更新了同一条活动，按提示载入最新版本或覆盖 |

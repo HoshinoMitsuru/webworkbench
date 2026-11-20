@@ -83,7 +83,7 @@ export default function LoginForm({ hint }: { hint: string }) {
         <div className="login-foot">
           本工具仅向 C公益 内部工作人员开放，不对外提供生成服务。
           <br />
-          同一账号保存的活动，机构内其他成员登录后都能查看和继续编辑。
+          登录一次可保持 30 天，公共电脑使用后请点右上角「退出」。
         </div>
       </form>
     </main>

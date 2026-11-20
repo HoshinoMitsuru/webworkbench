@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { SESSION_COOKIE, SESSION_TTL_SECONDS, createSessionToken } from '@/lib/auth';
+import { SESSION_COOKIE, createSessionToken, sessionCookieOptions } from '@/lib/auth';
 import { audit } from '@/lib/db';
 import { ensureSeedUsers, verifyCredentials } from '@/lib/users';
 import { trackLoginAttempt } from '@/lib/usage';
@@ -41,12 +41,7 @@ export async function POST(request: Request) {
   audit(user, 'auth.login', '', ip);
 
   const response = NextResponse.json({ ok: true, user: { name: user.name } });
-  response.cookies.set(SESSION_COOKIE, await createSessionToken(user), {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production' && process.env.COOKIE_SECURE !== '0',
-    path: '/',
-    maxAge: SESSION_TTL_SECONDS
-  });
+  const secure = new URL(request.url).protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
+  response.cookies.set(SESSION_COOKIE, await createSessionToken(user), sessionCookieOptions(secure));
   return response;
 }

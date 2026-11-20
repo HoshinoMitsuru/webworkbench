@@ -1,12 +1,23 @@
 const encoder = new TextEncoder();
 
 export const SESSION_COOKIE = 'cgy_session';
-export const SESSION_TTL_SECONDS = 12 * 60 * 60;
+/** 机构内部成员相对固定：登录一次保留 30 天，持续使用会自动续期，无需反复输密码 */
+export const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 
 export interface SessionUser {
   uid: string;
   name: string;
   exp: number;
+}
+
+export function sessionCookieOptions(secure: boolean) {
+  return {
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    secure,
+    path: '/',
+    maxAge: SESSION_TTL_SECONDS
+  };
 }
 
 function secret(): string {

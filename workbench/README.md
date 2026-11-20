@@ -20,7 +20,7 @@
 | F6 学生 / 公众 / 新闻稿改写 | 已实现 | 按需生成三版，可单块重写 |
 | F7 分块修改 | 已实现 | 重写 / 更口语 / 更正式 / 缩短，只替换该块 |
 | F8 导出 | 部分实现 | 文本复制、PNG 下载；飞书写回需租户应用权限，暂未接入 |
-| 账号体系 | 已实现 | 用户名 + 密码（scrypt 加盐哈希），签名 httpOnly Cookie，12 小时会话 |
+| 账号体系 | 已实现 | 用户名 + 密码（scrypt 加盐哈希），签名 httpOnly Cookie，登录保持 30 天并自动续期 |
 | 共享活动库 | 已实现 | SQLite 持久化；列表 / 新建 / 打开 / 保存 / 删除，全部登录成员可见 |
 | 多人协作 | 已实现 | 显示最后编辑人与时间；版本号乐观锁，冲突时提示载入或覆盖 |
 | 自动保存 | 已实现 | 生成、受众改写、分块重写后自动保存；手动保存按钮兜底 |
@@ -88,7 +88,7 @@ docker compose up -d --build
 docker compose exec app node scripts/create-user.mjs zhangsan Passw0rd2026 张三
 ```
 
-默认 nginx 监听 80，`app` 只在容器网络内暴露 3000。生产必须通过 HTTPS 访问；首次在纯 HTTP 上联调时，在 `.env` 中设 `COOKIE_SECURE=0`，否则浏览器不会保存登录 Cookie。
+默认 nginx 监听 80，`app` 只在容器网络内暴露 3000。登录 Cookie 会按访问协议自动加 `Secure`，HTTP 联调可直接使用；正式对外使用建议配置 HTTPS。
 
 关键环境变量：
 
@@ -97,7 +97,6 @@ docker compose exec app node scripts/create-user.mjs zhangsan Passw0rd2026 张�
 | `AUTH_SECRET` | 会话签名密钥，生产必填，32 位以上随机串 |
 | `DATA_DIR` | SQLite 目录，Docker 中为 `/app/data` |
 | `SEED_USERS` | 可选，首次启动批量建号，格式 `用户名:密码:姓名`，逗号分隔 |
-| `COOKIE_SECURE` | 纯 HTTP 联调时设 `0`；HTTPS 保持默认 |
 | `ARK_API_KEY` / `ARK_MODEL` | 方舟接入信息 |
 | `PAUSED` | `1` 时停止生成 |
 
