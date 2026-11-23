@@ -91,6 +91,8 @@ python main.py --profile cgy
 - 提交前自查 `git status`，确认没有 `.env`、数据库、上传素材或原始导出数据。
 - 不提交 `node_modules/`、`workbench/.next/`、`__pycache__/`、`*.tsbuildinfo` 等依赖与构建产物。
 
+完整的分支、提交、PR、敏感信息与 AI Coding 协作纪律见 [CONTRIBUTING.md](CONTRIBUTING.md)，所有组员及 AI 助手开工前请先阅读。
+
 ## 文档索引
 
 | 文档 | 内容 |
