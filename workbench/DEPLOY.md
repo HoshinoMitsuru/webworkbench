@@ -119,28 +119,33 @@ docker compose up -d --build      # 更新代码后重建
 
 ## 6. 备份与恢复
 
-数据库文件在宿主机 `./data/`：
+数据库与素材都在宿主机 `./data/`（SQLite `workbench.db` + `uploads/`）。推荐用内置脚本生成一个包含数据库与全部素材的 zip：
 
 ```bash
-# 在线备份（推荐，SQLite 自带一致性备份）
-docker compose exec app sh -c 'node -e "const D=require(\"better-sqlite3\");const db=new D(process.env.DATA_DIR+\"/workbench.db\");db.backup(\"/app/data/backup-$(date +%F).db\").then(()=>console.log(\"ok\"))"'
+# 宿主机已安装 Node 时
+npm run backup
 
-# 或整目录打包（需先停服，确保 WAL 落盘）
-docker compose stop app
-tar -czf backup-$(date +%F).tar.gz data
-docker compose start app
+# 或容器内执行，备份写入挂载目录 data/backups，容器重建不丢
+docker compose exec -e BACKUP_DIR=/app/data/backups app node scripts/backup.mjs
 ```
 
-恢复：
+脚本使用 SQLite 在线备份接口，服务运行中也可执行；输出 `backups/cgy-backup-<时间>.zip`，内含 `workbench.db`、`uploads/` 与 `manifest.json`。
+
+恢复步骤：
 
 ```bash
 docker compose stop app
-cp backup-2026-11-20.db data/workbench.db
+# 解压备份到临时目录
+unzip cgy-backup-20261124.zip -d /tmp/cgy-restore
+# 覆盖数据库与素材（保留原文件可先改名）
+cp /tmp/cgy-restore/workbench.db data/workbench.db
 rm -f data/workbench.db-wal data/workbench.db-shm
+rsync -a /tmp/cgy-restore/uploads/ data/uploads/
 docker compose start app
+curl -fsS https://你的域名/api/health   # 返回 ok 即恢复成功
 ```
 
-建议用 ECS 快照或定时任务每天备份，并把备份同步到对象存储。
+管理员登录后可访问 `/admin` 只读查看账号、运行配置、提示词/模型版本与最近运行、审计日志。建议用 ECS 快照或定时任务每天备份，并把备份同步到对象存储，定期做一次恢复演练。
 
 ## 7. 常见问题
 

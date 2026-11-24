@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "create-user": "node scripts/create-user.mjs"
+    "create-user": "node scripts/create-user.mjs",
+    "backup": "node scripts/backup.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^13.2.0",

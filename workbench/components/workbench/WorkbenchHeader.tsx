@@ -5,7 +5,7 @@ import { useState } from 'react';
 interface Props {
   userName: string;
   liveModel: boolean;
-  current?: 'activities' | 'resources';
+  current?: 'activities' | 'resources' | 'admin';
   right?: React.ReactNode;
 }
 
@@ -37,6 +37,9 @@ export default function WorkbenchHeader({ userName, liveModel, current, right }:
         </a>
         <a className={current === 'resources' ? 'active' : ''} href="/resources">
           资源监控
+        </a>
+        <a className={current === 'admin' ? 'active' : ''} href="/admin">
+          运维
         </a>
         <a href="/studio">完整编辑</a>
         <a href="/help" target="_blank" rel="noreferrer">

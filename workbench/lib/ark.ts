@@ -1,6 +1,16 @@
 import { SYSTEM_PROMPT } from './prompts';
+import { loadBrandVoice } from './brand-voice';
 
 const DEFAULT_BASE_URL = 'https://ark.cn-beijing.volces.com/api/v3';
+
+function defaultSystemPrompt(): string {
+  const voice = loadBrandVoice();
+  if (!voice) return SYSTEM_PROMPT;
+  return `${SYSTEM_PROMPT}
+
+机构语气库（只学表达方式，事实以资料为准）：
+${voice}`;
+}
 
 export function isLiveModel(): boolean {
   return Boolean(process.env.ARK_API_KEY && process.env.ARK_MODEL) && process.env.DEMO_MODE !== '1';
@@ -9,6 +19,7 @@ export function isLiveModel(): boolean {
 interface ChatOptions {
   temperature?: number;
   maxTokens?: number;
+  system?: string;
 }
 
 async function chat(prompt: string, options: ChatOptions = {}): Promise<string> {
@@ -25,7 +36,7 @@ async function chat(prompt: string, options: ChatOptions = {}): Promise<string> 
       body: JSON.stringify({
         model: process.env.ARK_MODEL,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: options.system || defaultSystemPrompt() },
           { role: 'user', content: prompt }
         ],
         temperature: options.temperature ?? 0.6,
@@ -70,8 +81,8 @@ function extractJson(raw: string): unknown {
   }
 }
 
-export async function chatJson<T>(prompt: string): Promise<T> {
-  const raw = await chat(prompt, { temperature: 0.5 });
+export async function chatJson<T>(prompt: string, options: ChatOptions = {}): Promise<T> {
+  const raw = await chat(prompt, { ...options, temperature: options.temperature ?? 0.5 });
   return extractJson(raw) as T;
 }
 
