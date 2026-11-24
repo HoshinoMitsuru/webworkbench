@@ -137,17 +137,18 @@ function validStage(stage: unknown): string {
   return STAGES.some((item) => item.key === stage) ? String(stage) : 'planning';
 }
 
-function insertTemplateTasks(activityId: string, templates: TaskTemplate[], actor: Actor, startStage: string): void {
+function insertTemplateTasks(activityId: string, templates: TaskTemplate[], startStage: string): void {
   const db = getDb();
   const at = nowIso();
   const counters = new Map<string, number>();
   const startIndex = stageIndex(startStage);
 
+  // 模板任务默认不指定负责人，改为保留责任角色，等待成员认领，避免“我的待办”被批量填满
   const insert = db.prepare(
     `INSERT INTO tasks
-      (id, activity_id, stage, kind, title, assignee, status, mode, output_kind, due_date,
+      (id, activity_id, stage, kind, title, assignee, role, status, mode, output_kind, due_date,
        pos_x, pos_y, order_index, input_refs, wait_reason, na_reason, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, '[]', '', ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, '', ?, ?, ?, ?, '', ?, ?, ?, '[]', '', ?, ?, ?)`
   );
 
   templates.forEach((template, index) => {
@@ -160,7 +161,7 @@ function insertTemplateTasks(activityId: string, templates: TaskTemplate[], acto
       template.stage,
       template.kind,
       template.title,
-      actor.name,
+      template.role,
       skipped ? 'na' : 'todo',
       template.mode,
       template.outputKind ?? '',
@@ -233,10 +234,13 @@ export function listSummaries(user: Actor): ActivitySummary[] {
 export function listMyTasks(user: Actor): MyTaskItem[] {
   const rows = getDb()
     .prepare(
-      `SELECT t.id, t.activity_id, a.title AS activity_title, t.title, t.stage, t.status, t.kind, t.updated_at
+      `SELECT t.id, t.activity_id, a.title AS activity_title, t.title, t.stage, t.status, t.kind, t.due_date, t.updated_at
        FROM tasks t JOIN activities a ON a.id = t.activity_id
        WHERE t.assignee = ? AND t.status NOT IN ('done', 'na')
-       ORDER BY t.updated_at DESC
+       ORDER BY
+         CASE WHEN t.due_date != '' AND t.due_date < date('now', 'localtime') THEN 0 ELSE 1 END,
+         CASE WHEN t.due_date != '' THEN t.due_date ELSE '9999-12-31' END,
+         t.updated_at DESC
        LIMIT 80`
     )
     .all(user.name) as Array<{
@@ -247,6 +251,7 @@ export function listMyTasks(user: Actor): MyTaskItem[] {
     stage: string;
     status: string;
     kind: string;
+    due_date: string;
     updated_at: string;
   }>;
 
@@ -258,6 +263,7 @@ export function listMyTasks(user: Actor): MyTaskItem[] {
     stage: row.stage,
     status: row.status,
     kind: row.kind,
+    dueDate: row.due_date || '',
     updatedAt: row.updated_at
   }));
 }
@@ -312,7 +318,7 @@ export function createActivity(
     );
 
   const materialKeys = Array.isArray(options.materials) ? options.materials : DEFAULT_MATERIAL_KEYS;
-  insertTemplateTasks(id, templatesForMaterials(materialKeys), actor, startStage);
+  insertTemplateTasks(id, templatesForMaterials(materialKeys), startStage);
 
   audit(actor, 'activity.create', id, titleOf(data));
   return getActivity(id)!;
@@ -467,9 +473,9 @@ export function copyActivity(actor: Actor, id: string): ActivityRecord | null {
 
   const insert = db.prepare(
     `INSERT INTO tasks
-      (id, activity_id, stage, kind, title, assignee, status, mode, output_kind, due_date,
+      (id, activity_id, stage, kind, title, assignee, role, status, mode, output_kind, due_date,
        pos_x, pos_y, order_index, input_refs, wait_reason, na_reason, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, 'todo', ?, ?, '', ?, ?, ?, '[]', '', '', ?, ?)`
+     VALUES (?, ?, ?, ?, ?, '', ?, 'todo', ?, ?, '', ?, ?, ?, '[]', '', '', ?, ?)`
   );
   const at = nowIso();
   for (const task of sourceTasks) {
@@ -479,7 +485,7 @@ export function copyActivity(actor: Actor, id: string): ActivityRecord | null {
       task.stage,
       task.kind,
       task.title,
-      task.assignee,
+      task.role ?? '',
       task.mode,
       task.output_kind,
       task.pos_x,

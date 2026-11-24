@@ -13,23 +13,32 @@ interface ChatOptions {
 
 async function chat(prompt: string, options: ChatOptions = {}): Promise<string> {
   const baseUrl = (process.env.ARK_BASE_URL || DEFAULT_BASE_URL).replace(/\/$/, '');
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.ARK_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: process.env.ARK_MODEL,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: prompt }
-      ],
-      temperature: options.temperature ?? 0.6,
-      max_tokens: options.maxTokens ?? 3000
-    }),
-    signal: AbortSignal.timeout(90_000)
-  });
+  const timeoutMs = Number(process.env.AI_TIMEOUT_MS || 90_000);
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.ARK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: process.env.ARK_MODEL,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: prompt }
+        ],
+        temperature: options.temperature ?? 0.6,
+        max_tokens: options.maxTokens ?? 3000
+      }),
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+  } catch (error) {
+    if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
+      throw new Error(`模型调用超过 ${Math.round(timeoutMs / 1000)} 秒未返回，已自动中止，请重试。`);
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');

@@ -161,6 +161,8 @@ CREATE TABLE IF NOT EXISTS ai_runs (
   operator_name TEXT NOT NULL DEFAULT '',
   ms INTEGER NOT NULL DEFAULT 0,
   chars INTEGER NOT NULL DEFAULT 0,
+  tokens INTEGER NOT NULL DEFAULT 0,
+  cost REAL NOT NULL DEFAULT 0,
   error TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL
 );
@@ -193,6 +195,9 @@ function ensureColumns(db: Database.Database): void {
     ['activities', 'workflow', "TEXT NOT NULL DEFAULT 'recruit_review'"],
     ['activities', 'archived_at', 'TEXT'],
     ['tasks', 'note', "TEXT NOT NULL DEFAULT ''"],
+    ['tasks', 'role', "TEXT NOT NULL DEFAULT ''"],
+    ['ai_runs', 'tokens', 'INTEGER NOT NULL DEFAULT 0'],
+    ['ai_runs', 'cost', 'REAL NOT NULL DEFAULT 0'],
     ['reviews', 'ai_ack', 'INTEGER NOT NULL DEFAULT 0'],
     ['publish_records', 'ai_declared', 'INTEGER NOT NULL DEFAULT 0'],
     ['materials', 'consent_by', "TEXT NOT NULL DEFAULT ''"],

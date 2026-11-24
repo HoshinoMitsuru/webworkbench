@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { audit, dataDir, getDb, uploadsDir } from '@/lib/db';
-import { listPendingDeletions, staleMaterialCount } from '@/lib/materials';
+import { listPendingDeletions, listStaleMaterials, staleMaterialCount } from '@/lib/materials';
 import type { OrphanUploadItem, ResourceStats } from '@/lib/workspace-types';
 
 function diskUsage(): { total: number; free: number; used: number } {
@@ -115,6 +115,21 @@ export function getResourceStats(): ResourceStats {
   const deletionPending = pendingDeletions.length;
   const orphanItems = scanOrphanUploads();
   const orphanBytes = orphanItems.reduce((sum, item) => sum + item.bytes, 0);
+  const staleMaterials = listStaleMaterials();
+
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const usageRow = getDb()
+    .prepare(
+      `SELECT COUNT(*) AS runs,
+              COALESCE(SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END), 0) AS success,
+              COALESCE(SUM(tokens), 0) AS tokens,
+              COALESCE(SUM(cost), 0) AS cost
+       FROM ai_runs WHERE created_at >= ?`
+    )
+    .get(monthStart.toISOString()) as { runs: number; success: number; tokens: number; cost: number };
+  const monthlyBudget = Number(process.env.AI_MONTHLY_BUDGET_CNY || 100);
 
   const warnings: string[] = [];
   if (disk.total > 0 && disk.free < storageWarnBytes) {
@@ -131,6 +146,9 @@ export function getResourceStats(): ResourceStats {
   }
   if (orphanItems.length > 0) {
     warnings.push(`发现 ${orphanItems.length} 个已删除活动的孤儿目录，确认后可人工清理，系统不会自动删除。`);
+  }
+  if (monthlyBudget > 0 && usageRow.cost > monthlyBudget) {
+    warnings.push(`本月 AI 估算费用已达 ${usageRow.cost.toFixed(2)} 元，超过预算 ${monthlyBudget} 元，请检查调用量。`);
   }
 
   return {
@@ -151,6 +169,14 @@ export function getResourceStats(): ResourceStats {
     orphanBytes,
     orphanItems,
     thresholds: { storageWarnBytes, memoryWarnPercent },
+    staleMaterials,
+    aiUsage: {
+      monthRuns: usageRow.runs,
+      monthSuccess: usageRow.success,
+      monthTokens: usageRow.tokens,
+      monthCost: usageRow.cost,
+      monthlyBudget
+    },
     warnings
   };
 }

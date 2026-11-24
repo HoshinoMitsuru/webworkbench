@@ -66,6 +66,7 @@ export const config = {
     '/api/tasks/:path*',
     '/api/materials/:path*',
     '/api/outputs/:path*',
+    '/api/runs/:path*',
     '/api/resources'
   ]
 };

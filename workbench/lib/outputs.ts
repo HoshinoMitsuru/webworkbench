@@ -60,6 +60,8 @@ interface RunRow {
   operator_name: string;
   ms: number;
   chars: number;
+  tokens: number;
+  cost: number;
   error: string;
   created_at: string;
 }
@@ -155,6 +157,8 @@ function toRun(row: RunRow): AiRunRecord {
     operatorName: row.operator_name,
     ms: row.ms,
     chars: row.chars,
+    tokens: row.tokens,
+    cost: row.cost,
     error: row.error,
     createdAt: row.created_at
   };
@@ -449,11 +453,62 @@ export function startRun(
 
 export function finishRun(
   id: string,
-  update: { ok: boolean; mode: string; ms: number; chars: number; error?: string }
+  update: {
+    ok: boolean;
+    status?: 'success' | 'failed' | 'cancelled';
+    mode: string;
+    ms: number;
+    chars: number;
+    tokens?: number;
+    cost?: number;
+    error?: string;
+  }
 ): void {
+  const status = update.status ?? (update.ok ? 'success' : 'failed');
   getDb()
-    .prepare('UPDATE ai_runs SET status = ?, mode = ?, ms = ?, chars = ?, error = ? WHERE id = ?')
-    .run(update.ok ? 'success' : 'failed', update.mode, update.ms, update.chars, (update.error || '').slice(0, 200), id);
+    .prepare(
+      'UPDATE ai_runs SET status = ?, mode = ?, ms = ?, chars = ?, tokens = ?, cost = ?, error = ? WHERE id = ?'
+    )
+    .run(
+      status,
+      update.mode,
+      update.ms,
+      update.chars,
+      Math.max(0, Math.round(update.tokens ?? 0)),
+      Math.max(0, update.cost ?? 0),
+      (update.error || '').slice(0, 200),
+      id
+    );
+}
+
+/** 估算 token 与费用：中文约 1.5 字/token，费用单价由环境变量配置，未配置时按 0 计。 */
+export function estimateUsage(chars: number, mode: string): { tokens: number; cost: number } {
+  const tokens = Math.round(chars / 1.5);
+  const rate = Number(process.env.AI_COST_PER_1K_TOKENS || 0);
+  const cost = mode === 'live' && Number.isFinite(rate) ? (tokens / 1000) * rate : 0;
+  return { tokens, cost: Math.round(cost * 10000) / 10000 };
+}
+
+export function getTaskRun(taskId: string): AiRunRecord | null {
+  const row = getDb()
+    .prepare('SELECT * FROM ai_runs WHERE task_id = ? ORDER BY created_at DESC LIMIT 1')
+    .get(taskId) as RunRow | undefined;
+  return row ? toRun(row) : null;
+}
+
+export function cancelRun(id: string): AiRunRecord | null {
+  getDb()
+    .prepare("UPDATE ai_runs SET status = 'cancelled', error = '用户取消生成' WHERE id = ? AND status = 'running'")
+    .run(id);
+  const row = getDb().prepare('SELECT * FROM ai_runs WHERE id = ?').get(id) as RunRow | undefined;
+  return row ? toRun(row) : null;
+}
+
+export function isRunCancelled(id: string): boolean {
+  const row = getDb().prepare('SELECT status FROM ai_runs WHERE id = ?').get(id) as
+    | { status: string }
+    | undefined;
+  return row?.status === 'cancelled';
 }
 
 export function countPendingReview(activityId: string): number {

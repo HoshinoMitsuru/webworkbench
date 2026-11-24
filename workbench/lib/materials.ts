@@ -493,3 +493,43 @@ export function staleMaterialCount(): number {
     .get(cutoff) as { count: number };
   return row.count;
 }
+
+/** 7 天未使用的素材清单，供资源页跳转到对应活动资料库发起删除审批 */
+export function listStaleMaterials(limit = 20): Array<{
+  id: string;
+  activityId: string;
+  activityTitle: string;
+  name: string;
+  uploadedByName: string;
+  lastUsedAt: string | null;
+  createdAt: string;
+}> {
+  const cutoff = new Date(Date.now() - STALE_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const rows = getDb()
+    .prepare(
+      `SELECT m.id, m.activity_id, a.title AS activity_title, m.name, m.uploaded_by_name,
+              m.last_used_at, m.created_at
+       FROM materials m JOIN activities a ON a.id = m.activity_id
+       WHERE m.delete_state != 'approved' AND COALESCE(m.last_used_at, m.created_at) < ?
+       ORDER BY COALESCE(m.last_used_at, m.created_at) ASC
+       LIMIT ?`
+    )
+    .all(cutoff, limit) as Array<{
+    id: string;
+    activity_id: string;
+    activity_title: string;
+    name: string;
+    uploaded_by_name: string;
+    last_used_at: string | null;
+    created_at: string;
+  }>;
+  return rows.map((row) => ({
+    id: row.id,
+    activityId: row.activity_id,
+    activityTitle: row.activity_title,
+    name: row.name,
+    uploadedByName: row.uploaded_by_name,
+    lastUsedAt: row.last_used_at,
+    createdAt: row.created_at
+  }));
+}

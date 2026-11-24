@@ -2,8 +2,9 @@ import { chatJson, isLiveModel } from '@/lib/ark';
 import { demoAudience, demoGenerate } from '@/lib/demo';
 import { checkFacts } from '@/lib/facts';
 import { maskPersonalInfo, sanitizeActivity } from '@/lib/sanitize';
-import { createOutput, finishRun, startRun, type Actor } from '@/lib/outputs';
+import { createOutput, estimateUsage, finishRun, isRunCancelled, startRun, type Actor } from '@/lib/outputs';
 import { markMaterialsUsed } from '@/lib/materials';
+import { checkSensitiveWords } from '@/lib/word-check';
 import { TASK_KIND_META } from '@/lib/workflow';
 import type { ActivityRecord } from '@/lib/activities';
 import type { ActivityInput } from '@/lib/types';
@@ -322,19 +323,34 @@ export async function runTaskGeneration(input: {
       if (!draft.body.trim()) throw new Error('模型返回内容为空，请重试。');
     }
   } catch (error) {
+    const cancelled = isRunCancelled(runId);
     finishRun(runId, {
       ok: false,
+      status: cancelled ? 'cancelled' : 'failed',
       mode: isLiveModel() ? 'live' : 'demo',
       ms: Date.now() - startedAt,
       chars: 0,
-      error: error instanceof Error ? error.message : '生成失败'
+      error: cancelled ? '用户取消生成' : error instanceof Error ? error.message : '生成失败'
     });
     throw error;
   }
 
+  if (isRunCancelled(runId)) {
+    finishRun(runId, {
+      ok: false,
+      status: 'cancelled',
+      mode,
+      ms: Date.now() - startedAt,
+      chars: 0,
+      error: '用户取消生成'
+    });
+    throw new Error('生成已取消，未生成新版本。');
+  }
+
   const meta = TASK_KIND_META[task.kind];
   const title = draft.title || meta?.label || task.title;
-  const warnings = checkFacts(`${title}\n${draft.body}`, sanitizedActivity);
+  const warnings = [...checkFacts(`${title}\n${draft.body}`, sanitizedActivity), ...checkSensitiveWords(`${title}\n${draft.body}`)];
+  const usage = estimateUsage(draft.body.length, mode);
 
   const output = createOutput(actor, {
     activityId: activity.id,
@@ -352,14 +368,19 @@ export async function runTaskGeneration(input: {
     mode,
     ms: Date.now() - startedAt,
     chars: draft.body.length,
+    tokens: usage.tokens,
+    cost: usage.cost,
     error: ''
   });
 
   if (input.materials.length > 0) {
     markMaterialsUsed(input.materials.map((material) => material.id));
   }
+  const sensitiveCount = warnings.filter((warning) => warning.reason.startsWith('合规')).length;
   if (warnings.length > 0) {
-    notices.push(`成稿中有 ${warnings.length} 处日期或数量未在资料中找到，已在结果区标出待核对。`);
+    notices.push(
+      `成稿中有 ${warnings.length} 处待核对提示（其中合规用词 ${sensitiveCount} 处），已在结果区标出。`
+    );
   }
 
   return { output, mode, notices };

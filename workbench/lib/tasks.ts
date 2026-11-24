@@ -10,6 +10,7 @@ interface TaskRow {
   kind: string;
   title: string;
   assignee: string;
+  role: string;
   status: string;
   mode: string;
   output_kind: string;
@@ -42,6 +43,7 @@ function toTask(row: TaskRow): TaskRecord {
     kind: row.kind,
     title: row.title,
     assignee: row.assignee,
+    role: row.role,
     status: row.status,
     mode: row.mode,
     outputKind: row.output_kind,
@@ -79,6 +81,7 @@ export interface TaskCreateInput {
   mode?: unknown;
   outputKind?: unknown;
   assignee?: unknown;
+  role?: unknown;
   dueDate?: unknown;
 }
 
@@ -107,9 +110,9 @@ export function createTask(
   getDb()
     .prepare(
       `INSERT INTO tasks
-        (id, activity_id, stage, kind, title, assignee, status, mode, output_kind, due_date,
+        (id, activity_id, stage, kind, title, assignee, role, status, mode, output_kind, due_date,
          pos_x, pos_y, order_index, input_refs, wait_reason, na_reason, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?, '[]', '', '', ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?, '[]', '', '', ?, ?)`
     )
     .run(
       id,
@@ -118,6 +121,7 @@ export function createTask(
       typeof input.kind === 'string' ? input.kind.slice(0, 30) : 'custom',
       title,
       typeof input.assignee === 'string' && input.assignee.trim() ? input.assignee.trim().slice(0, 40) : actor.name,
+      typeof input.role === 'string' ? input.role.trim().slice(0, 20) : '',
       mode,
       typeof input.outputKind === 'string' ? input.outputKind.slice(0, 20) : '',
       typeof input.dueDate === 'string' ? input.dueDate.slice(0, 20) : '',
@@ -136,6 +140,7 @@ export interface TaskPatch {
   title?: unknown;
   status?: unknown;
   assignee?: unknown;
+  role?: unknown;
   dueDate?: unknown;
   posX?: unknown;
   posY?: unknown;
@@ -161,6 +166,7 @@ export function updateTask(
   const stage = STAGES.some((item) => item.key === patch.stage) ? String(patch.stage) : current.stage;
   const assignee =
     typeof patch.assignee === 'string' ? patch.assignee.trim().slice(0, 40) : current.assignee;
+  const role = typeof patch.role === 'string' ? patch.role.trim().slice(0, 20) : current.role;
   const dueDate = typeof patch.dueDate === 'string' ? patch.dueDate.slice(0, 20) : current.dueDate;
   const posX = typeof patch.posX === 'number' && Number.isFinite(patch.posX) ? patch.posX : current.posX;
   const posY = typeof patch.posY === 'number' && Number.isFinite(patch.posY) ? patch.posY : current.posY;
@@ -174,7 +180,7 @@ export function updateTask(
 
   getDb()
     .prepare(
-      `UPDATE tasks SET title = ?, status = ?, assignee = ?, due_date = ?, pos_x = ?, pos_y = ?,
+      `UPDATE tasks SET title = ?, status = ?, assignee = ?, role = ?, due_date = ?, pos_x = ?, pos_y = ?,
         stage = ?, input_refs = ?, wait_reason = ?, na_reason = ?, note = ?, updated_at = ?
        WHERE id = ?`
     )
@@ -182,6 +188,7 @@ export function updateTask(
       title,
       status,
       assignee,
+      role,
       dueDate,
       posX,
       posY,

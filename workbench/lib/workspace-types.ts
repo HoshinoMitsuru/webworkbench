@@ -7,6 +7,8 @@ export interface TaskRecord {
   kind: string;
   title: string;
   assignee: string;
+  /** 模板责任角色（项目人员 / 新媒体 / 视觉），用于未认领时展示 */
+  role: string;
   status: string;
   mode: string;
   outputKind: string;
@@ -117,6 +119,10 @@ export interface AiRunRecord {
   operatorName: string;
   ms: number;
   chars: number;
+  /** 估算 token 数 */
+  tokens: number;
+  /** 估算费用（元） */
+  cost: number;
   error: string;
   createdAt: string;
 }
@@ -166,6 +172,7 @@ export interface MyTaskItem {
   stage: string;
   status: string;
   kind: string;
+  dueDate: string;
   updatedAt: string;
 }
 
@@ -214,6 +221,22 @@ export interface ResourceStats {
     reason: string;
   }>;
   thresholds: { storageWarnBytes: number; memoryWarnPercent: number };
+  staleMaterials: Array<{
+    id: string;
+    activityId: string;
+    activityTitle: string;
+    name: string;
+    uploadedByName: string;
+    lastUsedAt: string | null;
+    createdAt: string;
+  }>;
+  aiUsage: {
+    monthRuns: number;
+    monthSuccess: number;
+    monthTokens: number;
+    monthCost: number;
+    monthlyBudget: number;
+  };
   warnings: string[];
 }
 
