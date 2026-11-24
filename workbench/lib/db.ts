@@ -145,10 +145,25 @@ CREATE TABLE IF NOT EXISTS publish_records (
   url TEXT NOT NULL DEFAULT '',
   note TEXT NOT NULL DEFAULT '',
   ai_declared INTEGER NOT NULL DEFAULT 0,
+  reads INTEGER NOT NULL DEFAULT 0,
+  likes INTEGER NOT NULL DEFAULT 0,
+  signups INTEGER NOT NULL DEFAULT 0,
+  metrics_at TEXT,
   user_id TEXT NOT NULL,
   user_name TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS ai_config_versions (
+  id TEXT PRIMARY KEY,
+  version TEXT NOT NULL,
+  model TEXT NOT NULL DEFAULT '',
+  prompt_hash TEXT NOT NULL,
+  note TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_config_unique ON ai_config_versions(prompt_hash, model);
 
 CREATE TABLE IF NOT EXISTS ai_runs (
   id TEXT PRIMARY KEY,
@@ -200,6 +215,10 @@ function ensureColumns(db: Database.Database): void {
     ['ai_runs', 'cost', 'REAL NOT NULL DEFAULT 0'],
     ['reviews', 'ai_ack', 'INTEGER NOT NULL DEFAULT 0'],
     ['publish_records', 'ai_declared', 'INTEGER NOT NULL DEFAULT 0'],
+    ['publish_records', 'reads', 'INTEGER NOT NULL DEFAULT 0'],
+    ['publish_records', 'likes', 'INTEGER NOT NULL DEFAULT 0'],
+    ['publish_records', 'signups', 'INTEGER NOT NULL DEFAULT 0'],
+    ['publish_records', 'metrics_at', 'TEXT'],
     ['materials', 'consent_by', "TEXT NOT NULL DEFAULT ''"],
     ['materials', 'consent_at', 'TEXT'],
     ['materials', 'consent_note', "TEXT NOT NULL DEFAULT ''"]

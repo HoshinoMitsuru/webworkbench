@@ -1949,6 +1949,99 @@
   padding: 10px;
 }
 
+.wb-publish-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  width: 100%;
+  padding-top: 4px;
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.wb-publish-metrics label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wb-publish-metrics input {
+  width: 68px;
+  padding: 2px 4px;
+  font-size: 10px;
+}
+
+.wb-admin-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wb-admin-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  align-items: baseline;
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 6px;
+}
+
+.wb-admin-list li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.wb-admin-list em {
+  width: 100%;
+  font-style: normal;
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.wb-admin-table-wrap {
+  overflow-x: auto;
+}
+
+.wb-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.wb-admin-table th,
+.wb-admin-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.wb-admin-table td:last-child,
+.wb-admin-table th:last-child {
+  white-space: normal;
+}
+
+.wb-admin-table th {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.wb-admin-table em {
+  display: block;
+  font-style: normal;
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.wb-admin-error {
+  color: var(--danger);
+}
+
 .wb-history {
   display: flex;
   flex-direction: column;

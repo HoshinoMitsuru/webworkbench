@@ -57,6 +57,7 @@ export const config = {
     '/activities/:path*',
     '/activity/:path*',
     '/resources',
+    '/admin',
     '/api/generate',
     '/api/rewrite',
     '/api/audience',
@@ -66,6 +67,7 @@ export const config = {
     '/api/tasks/:path*',
     '/api/materials/:path*',
     '/api/outputs/:path*',
+    '/api/publishes/:path*',
     '/api/runs/:path*',
     '/api/resources'
   ]

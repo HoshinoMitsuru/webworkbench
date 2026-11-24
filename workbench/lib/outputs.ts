@@ -1,4 +1,5 @@
 import { audit, getDb, nowIso } from '@/lib/db';
+import { recordConfigVersion } from '@/lib/ai-config';
 import type { AiRunRecord, OutputRecord, PublishRecord, ReviewRecord } from '@/lib/workspace-types';
 
 interface OutputRow {
@@ -44,6 +45,10 @@ interface PublishRow {
   url: string;
   note: string;
   ai_declared: number;
+  reads: number;
+  likes: number;
+  signups: number;
+  metrics_at: string | null;
   user_id: string;
   user_name: string;
   created_at: string;
@@ -140,6 +145,10 @@ function toPublish(row: PublishRow): PublishRecord {
     url: row.url,
     note: row.note,
     aiDeclared: Boolean(row.ai_declared),
+    reads: row.reads,
+    likes: row.likes,
+    signups: row.signups,
+    metricsAt: row.metrics_at,
     userName: row.user_name,
     createdAt: row.created_at
   };
@@ -393,7 +402,7 @@ export function returnOutput(actor: Actor, id: string, comment = ''): OutputActi
 export function recordPublish(
   actor: Actor,
   outputId: string,
-  input: { platform?: unknown; url?: unknown; note?: unknown; aiDeclared?: unknown }
+  input: { platform?: unknown; url?: unknown; note?: unknown; aiDeclared?: unknown; reads?: unknown; likes?: unknown; signups?: unknown }
 ): PublishRecord | null {
   const output = getOutput(outputId);
   if (!output) return null;
@@ -402,10 +411,20 @@ export function recordPublish(
   const id = crypto.randomUUID();
   const at = nowIso();
   const aiDeclared = input.aiDeclared === true;
+  const metric = (value: unknown) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.min(Math.round(parsed), 100_000_000) : 0;
+  };
+  const reads = metric(input.reads);
+  const likes = metric(input.likes);
+  const signups = metric(input.signups);
+  const metricsAt = reads || likes || signups ? at : null;
   getDb()
     .prepare(
-      `INSERT INTO publish_records (id, activity_id, output_id, platform, url, note, ai_declared, user_id, user_name, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO publish_records
+        (id, activity_id, output_id, platform, url, note, ai_declared, reads, likes, signups, metrics_at,
+         user_id, user_name, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       id,
@@ -415,14 +434,45 @@ export function recordPublish(
       typeof input.url === 'string' ? input.url.slice(0, 400) : '',
       typeof input.note === 'string' ? input.note.slice(0, 300) : '',
       aiDeclared ? 1 : 0,
+      reads,
+      likes,
+      signups,
+      metricsAt,
       actor.id,
       actor.name,
       at
     );
 
-  audit(actor, 'publish.record', id, `${output.title} aiDeclared=${aiDeclared ? 1 : 0}`);
+  audit(actor, 'publish.record', id, `${output.title} aiDeclared=${aiDeclared ? 1 : 0} reads=${reads} signups=${signups}`);
   const row = getDb().prepare('SELECT * FROM publish_records WHERE id = ?').get(id) as PublishRow;
   return toPublish(row);
+}
+
+/** 发布效果回填：后续补充阅读、点赞与报名转化数据 */
+export function updatePublishMetrics(
+  actor: Actor,
+  id: string,
+  input: { reads?: unknown; likes?: unknown; signups?: unknown }
+): PublishRecord | null {
+  const row = getDb().prepare('SELECT * FROM publish_records WHERE id = ?').get(id) as PublishRow | undefined;
+  if (!row) return null;
+
+  const metric = (value: unknown, fallback: number) => {
+    if (value === undefined || value === null || value === '') return fallback;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? Math.min(Math.round(parsed), 100_000_000) : fallback;
+  };
+  const reads = metric(input.reads, row.reads);
+  const likes = metric(input.likes, row.likes);
+  const signups = metric(input.signups, row.signups);
+
+  getDb()
+    .prepare('UPDATE publish_records SET reads = ?, likes = ?, signups = ?, metrics_at = ? WHERE id = ?')
+    .run(reads, likes, signups, nowIso(), id);
+
+  audit(actor, 'publish.metrics', id, `reads=${reads} likes=${likes} signups=${signups}`);
+  const next = getDb().prepare('SELECT * FROM publish_records WHERE id = ?').get(id) as PublishRow;
+  return toPublish(next);
 }
 
 export function startRun(
@@ -433,6 +483,7 @@ export function startRun(
   operatorName: string
 ): string {
   const id = crypto.randomUUID();
+  recordConfigVersion(process.env.ARK_MODEL || 'demo');
   getDb()
     .prepare(
       `INSERT INTO ai_runs (id, activity_id, task_id, kind, status, mode, model, operator_name, ms, chars, error, created_at)

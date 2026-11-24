@@ -101,14 +101,19 @@ export async function GET(_request: Request, { params }: Params) {
     '审核人',
     '审核时间',
     '定稿海报',
-    '发布记录'
+    '发布记录',
+    '阅读量',
+    '点赞/在看',
+    '报名转化'
   ];
   const rows = ordered.map((output, index) => {
     const task = taskMap.get(output.taskId);
-    const record = publishes
-      .filter((item) => item.outputId === output.id)
+    const matchedPublishes = publishes.filter((item) => item.outputId === output.id);
+    const record = matchedPublishes
       .map((item) => `${item.platform}${item.url ? ` ${item.url}` : ''}${item.aiDeclared ? '（已声明AI）' : '（未声明AI）'}`)
       .join('；');
+    const metricTotal = (key: 'reads' | 'likes' | 'signups') =>
+      matchedPublishes.reduce((sum, item) => sum + item[key], 0);
     const poster = finalPosters.find((item) => item.outputId === output.id);
     return [
       String(index + 1),
@@ -119,7 +124,10 @@ export async function GET(_request: Request, { params }: Params) {
       output.approvedByName || '',
       formatDateTime(output.approvedAt),
       poster ? `v${poster.version}` : '',
-      record
+      record,
+      String(metricTotal('reads')),
+      String(metricTotal('likes')),
+      String(metricTotal('signups'))
     ]
       .map((cell) => csvCell(String(cell)))
       .join(',');

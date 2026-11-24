@@ -104,6 +104,14 @@ export interface PublishRecord {
   note: string;
   /** 发布时是否已在平台完成 AI 生成内容声明 */
   aiDeclared: boolean;
+  /** 阅读量（人工回填） */
+  reads: number;
+  /** 点赞/在看数（人工回填） */
+  likes: number;
+  /** 报名转化数（人工回填） */
+  signups: number;
+  /** 效果数据最近回填时间 */
+  metricsAt: string | null;
   userName: string;
   createdAt: string;
 }

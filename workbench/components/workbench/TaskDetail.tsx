@@ -75,6 +75,59 @@ function diffLines(before: string, after: string): Array<{ type: 'same' | 'add' 
   return rows;
 }
 
+function PublishMetricsEditor({
+  record,
+  onSaved,
+  onNotice
+}: {
+  record: PublishRecord;
+  onSaved: () => Promise<void>;
+  onNotice: (message: string, kind?: 'info' | 'error') => void;
+}) {
+  const [reads, setReads] = useState(String(record.reads || 0));
+  const [likes, setLikes] = useState(String(record.likes || 0));
+  const [signups, setSignups] = useState(String(record.signups || 0));
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    try {
+      await api(`/api/publishes/${record.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reads: Number(reads) || 0, likes: Number(likes) || 0, signups: Number(signups) || 0 })
+      });
+      await onSaved();
+      onNotice('效果数据已更新，回顾任务可引用这些数据。');
+    } catch (error) {
+      onNotice(error instanceof Error ? error.message : '效果数据保存失败', 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="wb-publish-metrics">
+      <span>效果数据</span>
+      <label>
+        阅读
+        <input type="number" min={0} value={reads} onChange={(event) => setReads(event.target.value)} />
+      </label>
+      <label>
+        点赞
+        <input type="number" min={0} value={likes} onChange={(event) => setLikes(event.target.value)} />
+      </label>
+      <label>
+        报名
+        <input type="number" min={0} value={signups} onChange={(event) => setSignups(event.target.value)} />
+      </label>
+      <button className="link-btn" type="button" onClick={() => void save()} disabled={busy}>
+        {busy ? '保存中…' : '保存数据'}
+      </button>
+      {record.metricsAt ? <em className="wb-muted">回填于 {formatDate(record.metricsAt)}</em> : null}
+    </div>
+  );
+}
+
 export default function TaskDetail({
   task,
   activity,
@@ -114,6 +167,9 @@ export default function TaskDetail({
   const [platform, setPlatform] = useState('公众号');
   const [url, setUrl] = useState('');
   const [publishNote, setPublishNote] = useState('');
+  const [reads, setReads] = useState('');
+  const [likes, setLikes] = useState('');
+  const [signups, setSignups] = useState('');
   const [aiAck, setAiAck] = useState(false);
   const [aiDeclared, setAiDeclared] = useState(true);
   const [cleanupPosterId, setCleanupPosterId] = useState('');
@@ -265,6 +321,61 @@ export default function TaskDetail({
     }
   }
 
+  async function copyForWeChat() {
+    if (!selected) return;
+    const escape = (value: string) =>
+      value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const content = body
+      .split('\n')
+      .map((line) => (line.trim() ? `<p style="margin:0 0 12px;">${escape(line)}</p>` : '<p style="margin:0;height:12px;">&nbsp;</p>'))
+      .join('');
+    const html = `<section style="font-size:16px;line-height:1.8;color:#333;">${
+      title ? `<h2 style="font-size:20px;line-height:1.4;margin:0 0 16px;">${escape(title)}</h2>` : ''
+    }${content}</section>`;
+    const plain = `${title ? `${title}\n\n` : ''}${body}`;
+    try {
+      if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/html': new Blob([html], { type: 'text/html' }),
+            'text/plain': new Blob([plain], { type: 'text/plain' })
+          })
+        ]);
+        onNotice('已复制富文本，可直接粘贴到公众号编辑器；粘贴后请再核对段落与格式。');
+        return;
+      }
+      throw new Error('clipboard unavailable');
+    } catch {
+      const holder = document.createElement('div');
+      holder.contentEditable = 'true';
+      holder.innerHTML = html;
+      holder.style.position = 'fixed';
+      holder.style.left = '-9999px';
+      document.body.appendChild(holder);
+      const range = document.createRange();
+      range.selectNodeContents(holder);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      const ok = document.execCommand('copy');
+      selection?.removeAllRanges();
+      document.body.removeChild(holder);
+      onNotice(ok ? '已复制富文本，可直接粘贴到公众号编辑器。' : '复制失败，请手动选择正文复制。', ok ? 'info' : 'error');
+    }
+  }
+
+  function exportDocx() {
+    if (!selected) return;
+    const draft = selected.status === 'approved' ? '' : '&draft=1';
+    window.location.href = `/api/outputs/${selected.id}/export?format=docx${draft}`;
+  }
+
+  function openPrint() {
+    if (!selected) return;
+    const draft = selected.status === 'approved' ? '' : '&draft=1';
+    window.open(`/api/outputs/${selected.id}/export?format=html&print=1${draft}`, '_blank', 'noopener');
+  }
+
   function exportOutput(formal: boolean) {
     if (!selected) return;
     if (formal && selected.status !== 'approved') {
@@ -283,11 +394,22 @@ export default function TaskDetail({
     try {
       await api(`/api/outputs/${selected.id}/publish`, {
         method: 'POST',
-        body: JSON.stringify({ platform, url, note: publishNote, aiDeclared })
+        body: JSON.stringify({
+          platform,
+          url,
+          note: publishNote,
+          aiDeclared,
+          reads: Number(reads) || 0,
+          likes: Number(likes) || 0,
+          signups: Number(signups) || 0
+        })
       });
       setPublishOpen(false);
       setUrl('');
       setPublishNote('');
+      setReads('');
+      setLikes('');
+      setSignups('');
       await onReload();
       onNotice('发布记录已保存。');
     } catch (error) {
@@ -737,6 +859,15 @@ export default function TaskDetail({
                   <button className="btn btn-sm" type="button" onClick={() => exportOutput(false)}>
                     导出草稿
                   </button>
+                  <button className="btn btn-sm" type="button" onClick={() => void copyForWeChat()}>
+                    复制到公众号
+                  </button>
+                  <button className="btn btn-sm" type="button" onClick={exportDocx}>
+                    导出 Word
+                  </button>
+                  <button className="btn btn-sm" type="button" onClick={openPrint}>
+                    打印 / 存为 PDF
+                  </button>
                   {selected.status === 'approved' ? (
                     <>
                       <button className="btn btn-sm btn-primary" type="button" onClick={() => exportOutput(true)}>
@@ -784,6 +915,38 @@ export default function TaskDetail({
                       <span>备注</span>
                       <input value={publishNote} onChange={(event) => setPublishNote(event.target.value)} placeholder="发布时间、账号或交接人" />
                     </label>
+                    <div className="wb-form-grid compact">
+                      <label className="wb-field">
+                        <span>阅读量（可稍后回填）</span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={reads}
+                          onChange={(event) => setReads(event.target.value)}
+                          placeholder="0"
+                        />
+                      </label>
+                      <label className="wb-field">
+                        <span>点赞 / 在看</span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={likes}
+                          onChange={(event) => setLikes(event.target.value)}
+                          placeholder="0"
+                        />
+                      </label>
+                      <label className="wb-field">
+                        <span>报名转化</span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={signups}
+                          onChange={(event) => setSignups(event.target.value)}
+                          placeholder="0"
+                        />
+                      </label>
+                    </div>
                     <label className="wb-ai-check">
                       <input
                         type="checkbox"
@@ -813,6 +976,7 @@ export default function TaskDetail({
                           {record.userName} · {formatDate(record.createdAt)} · {record.aiDeclared ? '已声明 AI' : '未声明 AI'}{' '}
                           {record.note}
                         </em>
+                        <PublishMetricsEditor record={record} onSaved={onReload} onNotice={onNotice} />
                       </div>
                     ))}
                   </div>
