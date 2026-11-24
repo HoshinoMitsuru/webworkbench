@@ -13,14 +13,15 @@ interface Props {
   paused: boolean;
 }
 
-type FilterKey = 'all' | 'mine' | 'review' | 'waiting' | 'empty';
+type FilterKey = 'all' | 'mine' | 'review' | 'waiting' | 'empty' | 'archived';
 
 const FILTERS: Array<{ key: FilterKey; label: string }> = [
   { key: 'all', label: '全部活动' },
   { key: 'mine', label: '我的待办' },
   { key: 'review', label: '待审核' },
   { key: 'waiting', label: '等待 / 受阻' },
-  { key: 'empty', label: '缺资料' }
+  { key: 'empty', label: '缺资料' },
+  { key: 'archived', label: '已归档' }
 ];
 
 const STAGE_BADGE: Record<string, string> = {
@@ -39,6 +40,7 @@ export default function ActivitiesClient({ user, liveModel, paused }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [query, setQuery] = useState('');
   const [creating, setCreating] = useState(false);
 
   async function load() {
@@ -59,15 +61,20 @@ export default function ActivitiesClient({ user, liveModel, paused }: Props) {
     void load();
   }, []);
 
+  const today = new Date().toLocaleDateString('sv-SE');
+
   const filtered = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
     return summaries.filter((item) => {
+      if (keyword && !`${item.title} ${item.ownerName}`.toLowerCase().includes(keyword)) return false;
       if (filter === 'mine') return item.myOpen > 0;
       if (filter === 'review') return item.pendingReview > 0;
       if (filter === 'waiting') return item.waiting > 0;
       if (filter === 'empty') return item.materialCount === 0;
+      if (filter === 'archived') return item.status === 'archived';
       return true;
     });
-  }, [summaries, filter]);
+  }, [summaries, filter, query]);
 
   const metrics = useMemo(
     () => ({
@@ -131,6 +138,13 @@ export default function ActivitiesClient({ user, liveModel, paused }: Props) {
         <div className="wb-columns">
           <section className="wb-list-panel">
             <div className="wb-toolbar">
+              <input
+                className="wb-search-input"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="搜索活动名称或负责人"
+                aria-label="搜索活动"
+              />
               <div className="wb-tabs">
                 {FILTERS.map((item) => (
                   <button
@@ -197,16 +211,24 @@ export default function ActivitiesClient({ user, liveModel, paused }: Props) {
               <p className="wb-muted">当前没有分配给你的未完成任务。</p>
             ) : (
               <ul className="wb-task-list">
-                {myTasks.slice(0, 14).map((task) => (
-                  <li key={task.id}>
-                    <a href={`/activity/${task.activityId}?task=${task.id}`}>
-                      <span className="wb-task-title">{task.title}</span>
-                      <span className="wb-task-sub">
-                        {task.activityTitle} · {STAGE_MAP[task.stage]?.label || task.stage}
-                      </span>
-                    </a>
-                  </li>
-                ))}
+                {myTasks.slice(0, 14).map((task) => {
+                  const overdue = Boolean(task.dueDate && task.dueDate < today);
+                  return (
+                    <li key={task.id} className={overdue ? 'overdue' : undefined}>
+                      <a href={`/activity/${task.activityId}?task=${task.id}`}>
+                        <span className="wb-task-title">{task.title}</span>
+                        <span className="wb-task-sub">
+                          {task.activityTitle} · {STAGE_MAP[task.stage]?.label || task.stage}
+                          {task.dueDate ? (
+                            <em className={overdue ? 'wb-due-overdue' : 'wb-due'}>
+                              {overdue ? `已逾期 ${task.dueDate}` : `截止 ${task.dueDate}`}
+                            </em>
+                          ) : null}
+                        </span>
+                      </a>
+                    </li>
+                  );
+                })}
               </ul>
             )}
 

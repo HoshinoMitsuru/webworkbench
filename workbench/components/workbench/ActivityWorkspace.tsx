@@ -12,7 +12,7 @@ import {
   TASK_KIND_META,
   TASK_STATUS_LABEL
 } from '@/lib/workflow';
-import type { WorkspacePayload, OutputRecord, TaskRecord } from '@/lib/workspace-types';
+import type { WorkspacePayload, OutputRecord, TaskRecord, AiRunRecord } from '@/lib/workspace-types';
 import WorkbenchHeader from './WorkbenchHeader';
 import TaskDetail from './TaskDetail';
 import MaterialPanel from './MaterialPanel';
@@ -44,11 +44,15 @@ export default function ActivityWorkspace({ activityId, user, liveModel, paused 
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 16, y: 16 });
   const [collapsed, setCollapsed] = useState<string[]>([]);
-  const [materialOpen, setMaterialOpen] = useState(false);
+  const [materialOpen, setMaterialOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('materials') === '1';
+  });
   const [posterTask, setPosterTask] = useState<TaskRecord | null>(null);
   const [posterTemplate, setPosterTemplate] = useState<PosterTemplate>('sky');
   const [posterAiMark, setPosterAiMark] = useState(true);
   const [busyTaskId, setBusyTaskId] = useState('');
+  const [activeRun, setActiveRun] = useState<AiRunRecord | null>(null);
   const [focusOutputId, setFocusOutputId] = useState<string | null>(null);
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -98,6 +102,9 @@ export default function ActivityWorkspace({ activityId, user, liveModel, paused 
   const tasks = workspace?.tasks ?? [];
   const outputs = workspace?.outputs ?? [];
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) ?? null;
+  const latestTaskRun = selectedTask
+    ? (workspace?.runs ?? []).find((run) => run.taskId === selectedTask.id) ?? null
+    : null;
 
   useEffect(() => {
     if (tasks.length === 0) return;
@@ -142,6 +149,7 @@ export default function ActivityWorkspace({ activityId, user, liveModel, paused 
         const body: Record<string, unknown> = {};
         if (patch.status !== undefined) body.status = patch.status;
         if (patch.assignee !== undefined) body.assignee = patch.assignee;
+        if (patch.role !== undefined) body.role = patch.role;
         if (patch.dueDate !== undefined) body.dueDate = patch.dueDate;
         if (patch.note !== undefined) body.note = patch.note;
         if (patch.waitReason !== undefined) body.waitReason = patch.waitReason;
@@ -164,6 +172,17 @@ export default function ActivityWorkspace({ activityId, user, liveModel, paused 
     if (busyTaskId) return null;
     setBusyTaskId(task.id);
     setFocusOutputId(null);
+    const startedAt = Date.now();
+    const timer = window.setInterval(async () => {
+      try {
+        const data = await api<{ run: AiRunRecord | null }>(`/api/tasks/${task.id}/run`);
+        if (data.run && new Date(data.run.createdAt).getTime() >= startedAt - 10_000) {
+          setActiveRun(data.run);
+        }
+      } catch {
+        // 轮询失败不打断生成
+      }
+    }, 800);
     try {
       const result = await api<{
         output: OutputRecord;
@@ -186,9 +205,23 @@ export default function ActivityWorkspace({ activityId, user, liveModel, paused 
       return result.output;
     } catch (err) {
       notify(err instanceof Error ? err.message : '生成失败，请重试', 'error');
+      await load();
       return null;
     } finally {
+      window.clearInterval(timer);
+      setActiveRun(null);
       setBusyTaskId('');
+    }
+  }
+
+  async function cancelActiveRun() {
+    if (!activeRun || activeRun.status !== 'running') return;
+    try {
+      const data = await api<{ run: AiRunRecord }>(`/api/runs/${activeRun.id}/cancel`, { method: 'POST' });
+      setActiveRun(data.run);
+      notify('已请求取消，模型返回后将不再生成新版本。');
+    } catch (err) {
+      notify(err instanceof Error ? err.message : '取消失败', 'error');
     }
   }
 
@@ -756,7 +789,9 @@ export default function ActivityWorkspace({ activityId, user, liveModel, paused 
                         </div>
                         <h4>{task.title}</h4>
                         <div className="wb-task-card-foot">
-                          <span title="负责人">{task.assignee || '未分配'}</span>
+                          <span title={task.assignee ? '负责人' : '待认领'}>
+                            {task.assignee || `待认领${task.role ? ` · ${task.role}` : ''}`}
+                          </span>
                           <span className={`wb-task-status status-${task.status}`}>
                             {TASK_STATUS_LABEL[task.status] || task.status}
                           </span>
@@ -804,7 +839,7 @@ export default function ActivityWorkspace({ activityId, user, liveModel, paused 
                                 <em>{TASK_KIND_META[task.kind]?.label || task.kind}</em>
                               </span>
                               <span className="wb-row-side">
-                                <span>{task.assignee || '未分配'}</span>
+                                <span>{task.assignee || `待认领${task.role ? ` · ${task.role}` : ''}`}</span>
                                 {task.dueDate ? <span>截止 {task.dueDate}</span> : null}
                                 <span className={`wb-task-status status-${task.status}`}>
                                   {TASK_STATUS_LABEL[task.status] || task.status}
@@ -842,9 +877,12 @@ export default function ActivityWorkspace({ activityId, user, liveModel, paused 
               liveModel={liveModel}
               paused={paused}
               busy={busyTaskId === selectedTask.id}
+              activeRun={activeRun?.taskId === selectedTask.id ? activeRun : null}
+              latestRun={latestTaskRun}
               focusOutputId={focusOutputId}
               onPatchTask={(patch) => patchTask(selectedTask.id, patch)}
               onGenerate={() => void generate(selectedTask)}
+              onCancelRun={() => void cancelActiveRun()}
               onReload={load}
               onOpenMaterials={() => setMaterialOpen(true)}
               onOpenPoster={() => setPosterTask(selectedTask)}

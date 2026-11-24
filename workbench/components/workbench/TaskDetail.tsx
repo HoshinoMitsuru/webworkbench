@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ACTIVITY_STATUS_LABEL, CONTENT_STATUS_LABEL, TASK_KIND_META, TASK_STATUS_LABEL, STAGE_MAP } from '@/lib/workflow';
 import type {
   ActivityDetail,
+  AiRunRecord,
   MaterialRecord,
   OutputRecord,
   PosterAssetRecord,
@@ -11,6 +12,7 @@ import type {
   ReviewRecord,
   TaskRecord
 } from '@/lib/workspace-types';
+import { checkSensitiveWords } from '@/lib/word-check';
 import { api, downloadText, formatDate } from './api';
 
 interface Props {
@@ -25,9 +27,12 @@ interface Props {
   liveModel: boolean;
   paused: boolean;
   busy: boolean;
+  activeRun?: AiRunRecord | null;
+  latestRun?: AiRunRecord | null;
   focusOutputId?: string | null;
   onPatchTask: (patch: Partial<TaskRecord>) => Promise<void>;
   onGenerate: () => void;
+  onCancelRun: () => void;
   onReload: () => Promise<void>;
   onOpenMaterials: () => void;
   onOpenPoster: () => void;
@@ -39,6 +44,36 @@ const REVIEW_LABEL: Record<string, string> = {
   approve: '审核通过',
   return: '退回修改'
 };
+
+function diffLines(before: string, after: string): Array<{ type: 'same' | 'add' | 'del'; text: string }> {
+  const a = before.split('\n').slice(0, 400);
+  const b = after.split('\n').slice(0, 400);
+  const dp: number[][] = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = a.length - 1; i >= 0; i -= 1) {
+    for (let j = b.length - 1; j >= 0; j -= 1) {
+      dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  const rows: Array<{ type: 'same' | 'add' | 'del'; text: string }> = [];
+  let i = 0;
+  let j = 0;
+  while (i < a.length && j < b.length && rows.length < 240) {
+    if (a[i] === b[j]) {
+      rows.push({ type: 'same', text: a[i] });
+      i += 1;
+      j += 1;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      rows.push({ type: 'del', text: a[i] });
+      i += 1;
+    } else {
+      rows.push({ type: 'add', text: b[j] });
+      j += 1;
+    }
+  }
+  while (i < a.length && rows.length < 240) rows.push({ type: 'del', text: a[i++] });
+  while (j < b.length && rows.length < 240) rows.push({ type: 'add', text: b[j++] });
+  return rows;
+}
 
 export default function TaskDetail({
   task,
@@ -52,9 +87,12 @@ export default function TaskDetail({
   liveModel,
   paused,
   busy,
+  activeRun = null,
+  latestRun = null,
   focusOutputId,
   onPatchTask,
   onGenerate,
+  onCancelRun,
   onReload,
   onOpenMaterials,
   onOpenPoster,
@@ -80,6 +118,17 @@ export default function TaskDetail({
   const [aiDeclared, setAiDeclared] = useState(true);
   const [cleanupPosterId, setCleanupPosterId] = useState('');
   const [deletingPoster, setDeletingPoster] = useState('');
+  const [nowTick, setNowTick] = useState(Date.now());
+
+  useEffect(() => {
+    if (!activeRun || activeRun.status !== 'running') return;
+    const timer = window.setInterval(() => setNowTick(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [activeRun?.id, activeRun?.status]);
+
+  const runElapsed = activeRun
+    ? Math.max(0, Math.round((nowTick - new Date(activeRun.createdAt).getTime()) / 1000))
+    : 0;
 
   const taskPosters = useMemo(
     () => posters.filter((poster) => poster.taskId === task.id).sort((a, b) => b.version - a.version),
@@ -160,6 +209,16 @@ export default function TaskDetail({
     if (action === 'approve' && !aiAck) {
       onNotice('请先提醒审核人：本内容含 AI 生成成分，勾选“已核对并知悉”后再通过。', 'error');
       return;
+    }
+    if (action === 'submit') {
+      const found = checkSensitiveWords(`${title}\n${body}`);
+      if (found.length > 0) {
+        const tokens = [...new Set(found.map((item) => item.token))].join('、');
+        const confirmed = window.confirm(
+          `自检发现 ${found.length} 处合规敏感用词：${tokens}\n\n建议先修改；如确需提交，审核人仍会看到提示。是否继续提交？`
+        );
+        if (!confirmed) return;
+      }
     }
     setWorking(action);
     try {
@@ -280,13 +339,27 @@ export default function TaskDetail({
         </label>
         <label className="wb-field">
           <span>负责人</span>
-          <input
-            defaultValue={task.assignee}
-            key={`${task.id}-assignee`}
-            onBlur={(event) => {
-              if (event.target.value.trim() !== task.assignee) onPatchTask({ assignee: event.target.value.trim() });
-            }}
-          />
+          <div className="wb-assignee-row">
+            <input
+              defaultValue={task.assignee}
+              key={`${task.id}-assignee`}
+              placeholder={task.role ? `待认领 · ${task.role}` : '待认领'}
+              onBlur={(event) => {
+                if (event.target.value.trim() !== task.assignee) onPatchTask({ assignee: event.target.value.trim() });
+              }}
+            />
+            {!task.assignee ? (
+              <button
+                className="btn btn-sm"
+                type="button"
+                disabled={paused}
+                onClick={() => onPatchTask({ assignee: userName })}
+              >
+                认领
+              </button>
+            ) : null}
+          </div>
+          <small className="wb-muted">{task.role ? `责任角色：${task.role}` : '未设置责任角色'}</small>
         </label>
         <label className="wb-field">
           <span>截止时间</span>
@@ -416,11 +489,33 @@ export default function TaskDetail({
           >
             {busy ? '生成中…' : taskOutputs.length > 0 ? '重新生成初稿' : '生成初稿'}
           </button>
-          <span>
-            {liveModel
-              ? `将引用 ${effectiveRefCount} 份资料调用模型起草。`
-              : `演示模式：将引用 ${effectiveRefCount} 份资料跑通流程，正式使用前需配置模型。`}
-          </span>
+          {activeRun && activeRun.status === 'running' ? (
+            <>
+              <span>
+                生成中 · 已运行 {runElapsed} 秒
+                {activeRun.mode === 'live' ? '（模型调用）' : '（演示模式）'}
+              </span>
+              <button className="btn btn-sm btn-danger" type="button" onClick={onCancelRun}>
+                取消生成
+              </button>
+            </>
+          ) : (
+            <span>
+              {liveModel
+                ? `将引用 ${effectiveRefCount} 份资料调用模型起草；超时或取消后不会生成新版本。`
+                : `演示模式：将引用 ${effectiveRefCount} 份资料跑通流程，正式使用前需配置模型。`}
+            </span>
+          )}
+        </div>
+      ) : null}
+
+      {task.mode === 'ai' && !busy && latestRun && ['failed', 'cancelled'].includes(latestRun.status) ? (
+        <div className="wb-run-failed">
+          <strong>{latestRun.status === 'cancelled' ? '上次生成已取消' : '上次生成失败'}</strong>
+          <span>{latestRun.error || '未生成新版本'}</span>
+          <button className="btn btn-sm" type="button" onClick={onGenerate} disabled={paused}>
+            重试
+          </button>
         </div>
       ) : null}
 
@@ -545,10 +640,14 @@ export default function TaskDetail({
 
                 {selected.warnings.length > 0 ? (
                   <div className="wb-warnings">
-                    <strong>待核对</strong>
+                    <strong>待核对 / 合规提示（{selected.warnings.length}）</strong>
                     <div>
                       {selected.warnings.map((warning) => (
-                        <span key={`${warning.token}-${warning.reason}`} title={warning.reason}>
+                        <span
+                          key={`${warning.token}-${warning.reason}`}
+                          title={warning.reason}
+                          className={warning.reason.startsWith('合规') ? 'wb-warning-compliance' : undefined}
+                        >
                           {warning.token}
                         </span>
                       ))}
@@ -575,6 +674,9 @@ export default function TaskDetail({
                 {selected.status === 'pending' ? (
                   <div className="wb-ai-notice">
                     <strong>本内容含 AI 生成成分</strong>
+                    <p>
+                      本次送审版本为 v{selected.version}，系统会保存送审快照，审核完成后可在下方审核记录中查看快照与当前内容的差异。
+                    </p>
                     <p>
                       请审核人核对事实、数据、引用与肖像/作品授权，并知悉：通过后可不再显示显式 AI 标识，但文件隐式元数据与审核留痕始终保留；发布时仍需在平台完成 AI 声明。
                     </p>
@@ -729,6 +831,25 @@ export default function TaskDetail({
                           {review.userName} · {formatDate(review.createdAt)}
                         </em>
                         {review.comment ? <p>{review.comment}</p> : null}
+                        {review.snapshotBody ? (
+                          <details className="wb-snapshot">
+                            <summary>查看送审快照（{review.snapshotTitle || '无标题'}）</summary>
+                            <pre>{review.snapshotBody}</pre>
+                            {selected && review.snapshotBody !== selected.body ? (
+                              <div className="wb-diff">
+                                <strong>与当前版本 v{selected.version} 的差异</strong>
+                                {diffLines(review.snapshotBody, selected.body).map((line, index) => (
+                                  <div key={index} className={`wb-diff-${line.type}`}>
+                                    {line.type === 'add' ? '+ ' : line.type === 'del' ? '- ' : '  '}
+                                    {line.text || ' '}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <em className="wb-muted">与当前内容一致。</em>
+                            )}
+                          </details>
+                        ) : null}
                       </div>
                     ))}
                   </div>

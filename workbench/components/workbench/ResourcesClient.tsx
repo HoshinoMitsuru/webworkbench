@@ -186,6 +186,34 @@ export default function ResourcesClient({ userName, liveModel }: Props) {
 
           <article className="wb-resource-card">
             <div className="wb-resource-head">
+              <h2>本月 AI 用量</h2>
+              <span>{stats?.aiUsage.monthRuns || 0} 次调用</span>
+            </div>
+            <p className="wb-muted">
+              按成稿字符估算 token 与费用，单价由环境变量 AI_COST_PER_1K_TOKENS 配置；仅作预算参考。
+            </p>
+            <dl>
+              <div>
+                <dt>成功生成</dt>
+                <dd>{stats?.aiUsage.monthSuccess || 0} 次</dd>
+              </div>
+              <div>
+                <dt>估算 token</dt>
+                <dd>{(stats?.aiUsage.monthTokens || 0).toLocaleString()}</dd>
+              </div>
+              <div>
+                <dt>估算费用</dt>
+                <dd>¥{(stats?.aiUsage.monthCost || 0).toFixed(2)}</dd>
+              </div>
+              <div>
+                <dt>月度预算</dt>
+                <dd>¥{stats?.aiUsage.monthlyBudget || 0}</dd>
+              </div>
+            </dl>
+          </article>
+
+          <article className="wb-resource-card">
+            <div className="wb-resource-head">
               <h2>孤儿目录</h2>
               <span>{stats?.orphanCount || 0} 个</span>
             </div>
@@ -231,6 +259,35 @@ export default function ResourcesClient({ userName, liveModel }: Props) {
                     <span className="wb-muted">
                       {item.files} 个文件 · {formatBytes(item.bytes)}
                     </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {stats?.staleMaterials.length ? (
+          <section className="wb-panel">
+            <div className="wb-panel-head">
+              <h2>7 天未使用的素材</h2>
+              <span>共 {stats.staleCount} 份，列出最近 {stats.staleMaterials.length} 份</span>
+            </div>
+            <p className="wb-muted">
+              这里只做提示，不会自动删除。进入对应活动资料库发起删除申请，经审批后才会移除文件。
+            </p>
+            <ul className="wb-deletion-list">
+              {stats.staleMaterials.map((item) => (
+                <li key={item.id}>
+                  <div>
+                    <strong>{item.name}</strong>
+                    <span>
+                      {item.activityTitle} · {item.uploadedByName} 上传 · 最近使用 {formatDate(item.lastUsedAt || item.createdAt)}
+                    </span>
+                  </div>
+                  <div className="wb-deletion-actions">
+                    <a className="link-btn" href={`/activity/${item.activityId}?materials=1`}>
+                      去资料库处理
+                    </a>
                   </div>
                 </li>
               ))}
