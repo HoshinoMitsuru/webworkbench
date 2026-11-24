@@ -79,3 +79,22 @@ export function summarize(input: ActivityInput): { chars: number; hasNotes: bool
     input.notes.length;
   return { chars, hasNotes: input.notes.trim().length > 0 };
 }
+
+/** 对任意文本做最小必要脱敏，用于把上传资料送进模型前处理 */
+export function maskPersonalInfo(value: string): { text: string; maskedCount: number } {
+  let maskedCount = 0;
+  const text = value
+    .replace(PHONE, () => {
+      maskedCount += 1;
+      return '〔联系电话〕';
+    })
+    .replace(ID_CARD, () => {
+      maskedCount += 1;
+      return '〔证件号〕';
+    })
+    .replace(EMAIL, () => {
+      maskedCount += 1;
+      return '〔邮箱〕';
+    });
+  return { text, maskedCount };
+}
