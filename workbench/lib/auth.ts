@@ -34,7 +34,9 @@ function toBase64Url(bytes: ArrayBuffer | Uint8Array): string {
 }
 
 function fromBase64Url(value: string): string {
-  return atob(value.replace(/-/g, '+').replace(/_/g, '/'));
+  const binary = atob(value.replace(/-/g, '+').replace(/_/g, '/'));
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
 }
 
 async function hmac(data: string): Promise<string> {
