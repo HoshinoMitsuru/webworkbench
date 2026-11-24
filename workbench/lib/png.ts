@@ -30,14 +30,33 @@ function buildTextChunk(keyword: string, text: string): Uint8Array {
 }
 
 /** 在 PNG 的 IEND 之前写入文本元数据，作为 AI 生成内容的隐式标识 */
-export function withAiMetadata(buffer: ArrayBuffer): Blob {
+export interface AiImageMeta {
+  activityId?: string;
+  taskId?: string;
+  outputId?: string;
+  model?: string;
+}
+
+/**
+ * 简化实现：用 tEXt 块写入 ASCII 元数据。
+ * 审核通过只免“显式”标注，这里写入的隐式标识与生成时间始终保留。
+ */
+export function withAiMetadata(buffer: ArrayBuffer, meta: AiImageMeta = {}): Blob {
   const bytes = new Uint8Array(buffer);
   if (bytes.length < 12) return new Blob([bytes], { type: 'image/png' });
 
-  const chunks = [
-    buildTextChunk('Software', 'CGY Content Workbench'),
-    buildTextChunk('Comment', 'AI-assisted draft. Human review required before publishing.')
+  const entries: Array<[string, string]> = [
+    ['Software', 'CGY Content Workbench'],
+    ['Comment', 'AI-assisted draft. Human review required before publishing.'],
+    ['DigitalSourceType', 'trainedAlgorithmicMedia'],
+    ['AIGeneratedAt', new Date().toISOString()]
   ];
+  if (meta.outputId) entries.push(['AIContentID', meta.outputId]);
+  if (meta.activityId) entries.push(['AIActivityID', meta.activityId]);
+  if (meta.taskId) entries.push(['AITaskID', meta.taskId]);
+  if (meta.model) entries.push(['AIModel', meta.model]);
+
+  const chunks = entries.map(([keyword, text]) => buildTextChunk(keyword, text));
   const insertAt = bytes.length - 12;
   const total = bytes.length + chunks.reduce((sum, item) => sum + item.length, 0);
 

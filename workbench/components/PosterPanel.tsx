@@ -11,6 +11,11 @@ interface Props {
   onTemplateChange: (template: PosterTemplate) => void;
   showAiMark: boolean;
   onShowAiMarkChange: (value: boolean) => void;
+  activityId?: string;
+  taskId?: string;
+  outputId?: string;
+  onSaveAsVersion?: (blob: Blob) => Promise<void>;
+  onNotice?: (message: string, kind?: 'info' | 'error') => void;
 }
 
 const TEMPLATES: Array<{ key: PosterTemplate; label: string; hint: string }> = [
@@ -24,10 +29,16 @@ export default function PosterPanel({
   template,
   onTemplateChange,
   showAiMark,
-  onShowAiMarkChange
+  onShowAiMarkChange,
+  activityId,
+  taskId,
+  outputId,
+  onSaveAsVersion,
+  onNotice
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [downloading, setDownloading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -44,14 +55,34 @@ export default function PosterPanel({
     });
   }, [activity, template, showAiMark]);
 
-  async function download() {
+  async function capture(): Promise<Blob | null> {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return null;
+    return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+  }
+
+  async function uploadDraft(blob: Blob) {
+    if (!taskId) return;
+    const form = new FormData();
+    form.append('file', blob, 'poster-draft.png');
+    form.append('state', 'draft');
+    if (outputId) form.append('outputId', outputId);
+    const response = await fetch(`/api/tasks/${taskId}/posters`, { method: 'POST', body: form });
+    if (!response.ok) {
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      throw new Error(data.error || '上传云端失败');
+    }
+  }
+
+  async function download() {
+    const blob = await capture();
+    if (!blob) {
+      onNotice?.('导出失败，请重试。', 'error');
+      return;
+    }
     setDownloading(true);
     try {
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-      if (!blob) throw new Error('导出失败');
-      const withMeta = withAiMetadata(await blob.arrayBuffer());
+      const withMeta = withAiMetadata(await blob.arrayBuffer(), { activityId, taskId, outputId });
       const url = URL.createObjectURL(withMeta);
       const link = document.createElement('a');
       const safeName = (activity.name || 'C公益活动海报').replace(/[\\/:*?"<>|]/g, '').slice(0, 40);
@@ -59,8 +90,31 @@ export default function PosterPanel({
       link.download = `${safeName}-${template}.png`;
       link.click();
       URL.revokeObjectURL(url);
+      try {
+        await uploadDraft(withMeta);
+        onNotice?.('已下载，并上传云端保存为废案版本。');
+      } catch {
+        onNotice?.('已下载，但上传云端失败；本地文件不受影响。', 'error');
+      }
     } finally {
       setDownloading(false);
+    }
+  }
+
+  async function saveAsVersion() {
+    if (!onSaveAsVersion) return;
+    const blob = await capture();
+    if (!blob) {
+      onNotice?.('保存失败，请重试。', 'error');
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSaveAsVersion(blob);
+    } catch (error) {
+      onNotice?.(error instanceof Error ? error.message : '保存海报版本失败', 'error');
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -112,10 +166,22 @@ export default function PosterPanel({
               {downloading ? '导出中…' : '下载 PNG'}
             </button>
 
+            {onSaveAsVersion ? (
+              <button
+                type="button"
+                className="btn"
+                style={{ width: '100%', marginTop: 8 }}
+                onClick={() => void saveAsVersion()}
+                disabled={saving}
+              >
+                {saving ? '保存中…' : '保存为海报版本（上传定稿）'}
+              </button>
+            ) : null}
+
             <div className="poster-meta" style={{ marginTop: 12 }}>
               海报文案取自左侧表单，缺项显示为「待补充」。二维码位置为预留框，正式发布前需替换为报名二维码。
               <br />
-              导出的 PNG 会在文件元数据中写入 AI 辅助生成标识。
+              下载的 PNG 会写入 AI 辅助生成标识并上传云端；超过 24 小时的废案会在工作台提示是否清理，系统不会自动删除。
             </div>
           </div>
         </div>
