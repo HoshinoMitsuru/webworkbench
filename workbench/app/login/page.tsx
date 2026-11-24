@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function LoginPage() {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  if (await verifySessionToken(token)) redirect('/studio');
+  if (await verifySessionToken(token)) redirect('/activities');
 
   ensureSeedUsers();
   return <LoginForm hint={loginHint()} />;

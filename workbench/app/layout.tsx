@@ -12,6 +12,7 @@ import './styles/script.css';
 import './styles/help.css';
 import './styles/library.css';
 import './styles/responsive.css';
+import './styles/workbench.css';
 
 export const metadata: Metadata = {
   title: 'C公益内容工作台',

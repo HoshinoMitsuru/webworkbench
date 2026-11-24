@@ -54,11 +54,18 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/studio/:path*',
+    '/activities/:path*',
+    '/activity/:path*',
+    '/resources',
     '/api/generate',
     '/api/rewrite',
     '/api/audience',
     '/api/example',
     '/api/activities',
-    '/api/activities/:path*'
+    '/api/activities/:path*',
+    '/api/tasks/:path*',
+    '/api/materials/:path*',
+    '/api/outputs/:path*',
+    '/api/resources'
   ]
 };

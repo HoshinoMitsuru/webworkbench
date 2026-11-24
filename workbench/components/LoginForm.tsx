@@ -26,7 +26,7 @@ export default function LoginForm({ hint }: { hint: string }) {
         setPending(false);
         return;
       }
-      window.location.href = '/studio';
+      window.location.href = '/activities';
     } catch {
       setError('网络异常，请重试');
       setPending(false);
