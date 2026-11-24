@@ -15,6 +15,8 @@ export default function ResourcesClient({ userName, liveModel }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [pickedMaterials, setPickedMaterials] = useState<string[]>([]);
+  const [batchBusy, setBatchBusy] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -50,6 +52,39 @@ export default function ResourcesClient({ userName, liveModel }: Props) {
     } catch (err) {
       setMessage(err instanceof Error ? err.message : '清理失败');
     }
+  }
+
+  async function requestBatchDeletion() {
+    if (!stats || pickedMaterials.length === 0) return;
+    const reason = window.prompt(
+      `将为选中的 ${pickedMaterials.length} 份素材发起删除申请。\n删除需要其他成员批准，批准前文件仍保留。\n\n请填写申请原因：`,
+      '连续 7 天未使用，申请清理'
+    );
+    if (reason === null) return;
+    setMessage('');
+    setBatchBusy(true);
+    let ok = 0;
+    const failed: string[] = [];
+    const names = new Map(stats.staleMaterials.map((item) => [item.id, item.name]));
+    for (const id of pickedMaterials) {
+      try {
+        await api(`/api/materials/${id}/deletion`, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'request', reason })
+        });
+        ok += 1;
+      } catch (err) {
+        failed.push(`${names.get(id) || id}：${err instanceof Error ? err.message : '失败'}`);
+      }
+    }
+    setBatchBusy(false);
+    setPickedMaterials([]);
+    await load();
+    setMessage(
+      failed.length === 0
+        ? `已发起 ${ok} 份删除申请，等待审批。批准前文件不会删除。`
+        : `已发起 ${ok} 份删除申请；${failed.length} 份失败：${failed.slice(0, 3).join('；')}`
+    );
   }
 
   async function resolveDeletion(id: string, action: 'approve' | 'reject') {
@@ -273,13 +308,44 @@ export default function ResourcesClient({ userName, liveModel }: Props) {
               <span>共 {stats.staleCount} 份，列出最近 {stats.staleMaterials.length} 份</span>
             </div>
             <p className="wb-muted">
-              这里只做提示，不会自动删除。进入对应活动资料库发起删除申请，经审批后才会移除文件。
+              可勾选后批量发起删除申请；删除必须经人工审批，批准前文件仍保留，系统不会自动删除。
             </p>
+            <div className="wb-deletion-actions" style={{ marginBottom: 8 }}>
+              <label className="wb-muted">
+                <input
+                  type="checkbox"
+                  checked={pickedMaterials.length === stats.staleMaterials.length && stats.staleMaterials.length > 0}
+                  onChange={(event) =>
+                    setPickedMaterials(event.target.checked ? stats.staleMaterials.map((item) => item.id) : [])
+                  }
+                />{' '}
+                全选本页
+              </label>
+              <button
+                className="btn btn-sm btn-danger"
+                type="button"
+                onClick={() => void requestBatchDeletion()}
+                disabled={pickedMaterials.length === 0 || batchBusy}
+              >
+                {batchBusy ? '提交中…' : `批量发起删除申请（${pickedMaterials.length}）`}
+              </button>
+            </div>
             <ul className="wb-deletion-list">
               {stats.staleMaterials.map((item) => (
                 <li key={item.id}>
                   <div>
-                    <strong>{item.name}</strong>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={pickedMaterials.includes(item.id)}
+                        onChange={(event) =>
+                          setPickedMaterials((prev) =>
+                            event.target.checked ? [...prev, item.id] : prev.filter((id) => id !== item.id)
+                          )
+                        }
+                      />{' '}
+                      <strong>{item.name}</strong>
+                    </label>
                     <span>
                       {item.activityTitle} · {item.uploadedByName} 上传 · 最近使用 {formatDate(item.lastUsedAt || item.createdAt)}
                     </span>

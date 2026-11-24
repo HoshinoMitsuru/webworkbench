@@ -957,6 +957,7 @@ function AddTaskForm({
   const [title, setTitle] = useState('');
   const [stage, setStage] = useState(defaultStage);
   const [mode, setMode] = useState('manual');
+  const [kind, setKind] = useState('');
   const [assignee, setAssignee] = useState(userName);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -969,7 +970,7 @@ function AddTaskForm({
     try {
       const result = await api<{ task: TaskRecord }>(`/api/activities/${activityId}/tasks`, {
         method: 'POST',
-        body: JSON.stringify({ title, stage, mode, assignee })
+        body: JSON.stringify({ title, stage, mode, kind, assignee })
       });
       await onCreated(result.task);
     } catch (err) {
@@ -993,6 +994,17 @@ function AddTaskForm({
         <option value="ai">AI 起草</option>
         <option value="visual">视觉制作</option>
       </select>
+      {mode === 'ai' ? (
+        <select value={kind} onChange={(event) => setKind(event.target.value)} title="生成场景">
+          <option value="">自动匹配场景</option>
+          <option value="planning">方案补全</option>
+          <option value="article_recruit">公众号招募</option>
+          <option value="article_review">公众号回顾</option>
+          <option value="note_recruit">小红书招募</option>
+          <option value="social">社群 / 朋友圈话术</option>
+          <option value="custom">自定义（通用）</option>
+        </select>
+      ) : null}
       <input value={assignee} onChange={(event) => setAssignee(event.target.value)} placeholder="负责人" />
       <button className="btn btn-sm btn-primary" type="submit" disabled={!title.trim() || busy}>
         {busy ? '添加中…' : '添加'}

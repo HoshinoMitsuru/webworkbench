@@ -62,6 +62,16 @@ function toTask(row: TaskRow): TaskRecord {
 
 const TASK_STATUS = ['todo', 'doing', 'waiting', 'blocked', 'done', 'na'];
 
+/** 手动添加 AI 任务时，按标题兜底匹配生成场景 */
+function inferKind(title: string): string {
+  if (/小红书|笔记/.test(title)) return 'note_recruit';
+  if (/回顾|活动总结|复盘推文/.test(title)) return 'article_review';
+  if (/话术|朋友圈|社群/.test(title)) return 'social';
+  if (/招募|公众号|推文/.test(title)) return 'article_recruit';
+  if (/方案|策划/.test(title)) return 'planning';
+  return 'custom';
+}
+
 export function listTasks(activityId: string): TaskRecord[] {
   const rows = getDb()
     .prepare('SELECT * FROM tasks WHERE activity_id = ? ORDER BY order_index, pos_y')
@@ -107,6 +117,8 @@ export function createTask(
 
   const id = crypto.randomUUID();
   const at = nowIso();
+  const requestedKind = typeof input.kind === 'string' ? input.kind.slice(0, 30) : '';
+  const kind = mode === 'ai' && (!requestedKind || requestedKind === 'custom') ? inferKind(title) : requestedKind || 'custom';
   getDb()
     .prepare(
       `INSERT INTO tasks
@@ -118,7 +130,7 @@ export function createTask(
       id,
       activityId,
       stage,
-      typeof input.kind === 'string' ? input.kind.slice(0, 30) : 'custom',
+      kind,
       title,
       typeof input.assignee === 'string' && input.assignee.trim() ? input.assignee.trim().slice(0, 40) : actor.name,
       typeof input.role === 'string' ? input.role.trim().slice(0, 20) : '',
