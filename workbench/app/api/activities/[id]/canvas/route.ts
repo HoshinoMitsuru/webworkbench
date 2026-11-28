@@ -29,8 +29,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const result = saveCanvasState(id, body);
   if (!result.ok) {
-    const status = result.error === '活动不存在' ? 404 : 400;
-    return NextResponse.json({ error: result.error }, { status });
+    return NextResponse.json({ error: result.error }, { status: result.status });
   }
   return NextResponse.json({ canvas: result.canvas });
 }

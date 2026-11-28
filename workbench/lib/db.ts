@@ -205,6 +205,21 @@ CREATE TABLE IF NOT EXISTS canvas_state (
   payload TEXT NOT NULL DEFAULT '{}',
   updated_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS canvas_comment (
+  id TEXT PRIMARY KEY,
+  activity_id TEXT NOT NULL,
+  node_id TEXT NOT NULL,
+  field TEXT NOT NULL DEFAULT 'general',
+  body TEXT NOT NULL DEFAULT '',
+  author_id TEXT NOT NULL,
+  author_name TEXT NOT NULL,
+  mentions TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT NOT NULL,
+  deleted_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_canvas_comment_activity ON canvas_comment(activity_id, created_at DESC);
 `;
 
 /** SQLite 不支持 ADD COLUMN IF NOT EXISTS，启动时按需补齐旧库字段 */

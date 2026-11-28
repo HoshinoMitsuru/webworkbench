@@ -1,16 +1,17 @@
 import { getActivity, type ActivityRecord } from '@/lib/activities';
-import { getDb, nowIso } from '@/lib/db';
-import { listOutputs } from '@/lib/outputs';
+import { audit, getDb, nowIso } from '@/lib/db';
+import { approveOutput, createOutput, listOutputs, submitOutput } from '@/lib/outputs';
 import { listTasks } from '@/lib/tasks';
 import { ACTIVITY_STATUS_LABEL, CONTENT_STATUS_LABEL } from '@/lib/workflow';
 import type { OutputRecord, TaskRecord } from '@/lib/workspace-types';
 
 /**
- * 「只读画布视图」的服务端状态。
+ * 「共享创作画布」的服务端状态。
  *
  * 画布只有固定五类节点：排期 / 主题 / 方案 / 公众号 / 小红书。
- * 节点内容全部由活动、任务与成品现场推导，画布只持久化节点坐标、缩放与分组，
- * 不保存任何正文，也不提供编辑能力。
+ * - 坐标、缩放、分组与主题卡内容存放在 canvas_state.payload；
+ * - 方案与平台稿一律写入 outputs 并生成新版本，画布不做原地覆盖；
+ * - 审核与定稿复用 outputs/reviews 现有机制。
  */
 
 export const CANVAS_NODE_IDS = ['schedule', 'theme', 'plan', 'wechat', 'xhs'] as const;
@@ -25,9 +26,26 @@ export const CANVAS_NODE_LABELS: Record<CanvasNodeId, string> = {
   xhs: '小红书'
 };
 
+export interface CanvasActor {
+  id: string;
+  name: string;
+}
+
 export interface CanvasNodeDetail {
   label: string;
   value: string;
+}
+
+export interface CanvasVersionView {
+  id: string;
+  version: number;
+  title: string;
+  body: string;
+  status: string;
+  statusLabel: string;
+  updatedAt: string;
+  approvedByName: string;
+  approvedAt: string | null;
 }
 
 export interface CanvasNodeView {
@@ -43,6 +61,22 @@ export interface CanvasNodeView {
   x: number;
   y: number;
   details: CanvasNodeDetail[];
+  editable: boolean;
+  /** 同一节点的上一版只读内容，用于对比 */
+  previous: CanvasVersionView | null;
+  finalized: boolean;
+  finalizedBy: string;
+  finalizedAt: string | null;
+}
+
+export interface CanvasTopicState {
+  title: string;
+  direction: string;
+  confirmedByName: string;
+  confirmedAt: string | null;
+  confirmed: boolean;
+  /** true 表示题目曾通过画布保存过；false 表示当前只是活动标题推导 */
+  stored: boolean;
 }
 
 export interface CanvasGroupState {
@@ -54,6 +88,7 @@ export interface CanvasGroupState {
 
 export interface CanvasPayload {
   nodes: CanvasNodeView[];
+  topic: CanvasTopicState;
   zoom: number;
   groups: CanvasGroupState[];
   updatedAt: string | null;
@@ -63,17 +98,39 @@ export interface CanvasPayload {
 
 type Positions = Record<CanvasNodeId, { x: number; y: number }>;
 
+interface StoredTopic {
+  title?: unknown;
+  direction?: unknown;
+  confirmedByName?: unknown;
+  confirmedAt?: unknown;
+}
+
 interface StoredCanvas {
   nodes?: Record<string, { x?: unknown; y?: unknown }>;
   zoom?: unknown;
   groups?: unknown;
+  topic?: unknown;
 }
+
+interface NormalizedTopic {
+  title: string;
+  direction: string;
+  confirmedByName: string;
+  confirmedAt: string | null;
+}
+
+export type CanvasWriteResult =
+  | { ok: true; canvas: CanvasPayload }
+  | { ok: false; error: string; status: 400 | 404 | 409 };
 
 export const COORD_MIN = -10000;
 export const COORD_MAX = 10000;
 export const ZOOM_MIN = 0.3;
 export const ZOOM_MAX = 2;
 export const DEFAULT_ZOOM = 0.8;
+export const TITLE_MAX = 120;
+export const DIRECTION_MAX = 2000;
+export const OUTPUT_BODY_MAX = 40_000;
 
 const DEFAULT_POSITIONS: Positions = {
   schedule: { x: 40, y: 60 },
@@ -95,25 +152,27 @@ function clampZoom(value: number): number {
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, value));
 }
 
-/** 从活动资料里找「人数」口径：现有 ActivityInput 没有独立人数字段，只在对象/备注文本中随文出现。 */
-function extractCount(activity: ActivityRecord): string {
-  const text = `${activity.data.audience} ${activity.data.notes}`;
-  const matched = text.match(/(?:共|约|计划)\s*(\d{1,5})\s*(?:人|名)/) || text.match(/(\d{1,5})\s*(?:人|名)/);
-  return matched ? `${matched[1]} 人（资料口径）` : '资料未记录';
-}
-
 function excerpt(text: string, max = 150): string {
   const clean = text.replace(/\s+/g, ' ').trim();
   return clean.length > max ? `${clean.slice(0, max)}…` : clean;
 }
 
 /** 同一任务可能有多个版本：优先已采用，其次最近更新，最后版本号。 */
-function pickLatest(list: OutputRecord[]): OutputRecord | undefined {
+function sortedOutputs(list: OutputRecord[]): OutputRecord[] {
   return [...list].sort((a, b) => {
     if (a.adopted !== b.adopted) return a.adopted ? -1 : 1;
     if (a.updatedAt !== b.updatedAt) return a.updatedAt < b.updatedAt ? 1 : -1;
     return b.version - a.version;
-  })[0];
+  });
+}
+
+function pickLatest(list: OutputRecord[]): OutputRecord | undefined {
+  return sortedOutputs(list)[0];
+}
+
+function previousOf(list: OutputRecord[], current: OutputRecord | undefined): OutputRecord | undefined {
+  if (!current) return undefined;
+  return sortedOutputs(list).find((item) => item.id !== current.id);
 }
 
 /**
@@ -121,26 +180,52 @@ function pickLatest(list: OutputRecord[]): OutputRecord | undefined {
  * - task-gen 落库时 output.kind = task.outputKind；workflow.ts 中公众号任务 outputKind 为 article，小红书任务为 note。
  * - 历史或自定义任务缺 outputKind 时，退回到 task.kind：article_recruit / article_review → 公众号，note_recruit → 小红书。
  */
-function platformOutput(
+function platformOutputs(
   platform: 'wechat' | 'xhs',
   outputs: OutputRecord[],
   taskKindById: Map<string, string>
-): OutputRecord | undefined {
+): OutputRecord[] {
   const directKind = platform === 'wechat' ? 'article' : 'note';
   const direct = outputs.filter((item) => item.kind === directKind);
-  if (direct.length) return pickLatest(direct);
+  if (direct.length) return direct;
 
   const fallbackKinds = platform === 'wechat' ? ['article_recruit', 'article_review'] : ['note_recruit'];
-  const fallback = outputs.filter((item) => {
+  return outputs.filter((item) => {
     const taskKind = taskKindById.get(item.taskId);
     return taskKind ? fallbackKinds.includes(taskKind) : false;
   });
-  return pickLatest(fallback);
+}
+
+function planOutputs(outputs: OutputRecord[], taskKindById: Map<string, string>): OutputRecord[] {
+  return outputs.filter((item) => item.kind === 'planning' || taskKindById.get(item.taskId) === 'planning');
+}
+
+function taskIdForPlatform(tasks: TaskRecord[], platform: 'wechat' | 'xhs'): string {
+  const outputKind = platform === 'wechat' ? 'article' : 'note';
+  const direct = tasks.find((task) => task.outputKind === outputKind);
+  if (direct) return direct.id;
+  const fallbackKinds = platform === 'wechat' ? ['article_recruit', 'article_review'] : ['note_recruit'];
+  return tasks.find((task) => fallbackKinds.includes(task.kind))?.id ?? '';
+}
+
+function toVersionView(output: OutputRecord): CanvasVersionView {
+  return {
+    id: output.id,
+    version: output.version,
+    title: output.title,
+    body: output.body,
+    status: output.status,
+    statusLabel: CONTENT_STATUS_LABEL[output.status] || output.status,
+    updatedAt: output.updatedAt,
+    approvedByName: output.approvedByName,
+    approvedAt: output.approvedAt
+  };
 }
 
 function contentNode(
   id: 'plan' | 'wechat' | 'xhs',
   output: OutputRecord | undefined,
+  previous: OutputRecord | undefined,
   position: { x: number; y: number }
 ): CanvasNodeView {
   const label = CANVAS_NODE_LABELS[id];
@@ -149,8 +234,8 @@ function contentNode(
       id === 'plan' ? '尚未生成方案' : id === 'wechat' ? '尚未生成公众号稿' : '尚未生成小红书稿';
     const hint =
       id === 'plan'
-        ? '这场活动还没有方案稿。可在工作台生成方案后回到画布查看，画布本身不会触发生成。'
-        : '工作台里还没有对应平台的稿件。生成并保存后会同步显示在这里，画布本身不会触发生成。';
+        ? '这场活动还没有方案稿。可直接在画布中撰写并保存，保存后生成第 1 版；AI 生成仍在工作台完成。'
+        : '工作台里还没有对应平台的稿件。可直接在画布中撰写并保存为新版本；AI 生成仍在工作台完成。';
     return {
       id,
       label,
@@ -163,28 +248,45 @@ function contentNode(
       empty: true,
       x: position.x,
       y: position.y,
-      details: []
+      details: [],
+      editable: true,
+      previous: null,
+      finalized: false,
+      finalizedBy: '',
+      finalizedAt: null
     };
   }
 
   const body = output.body.trim();
+  const finalized = output.status === 'approved' && Boolean(output.approvedByName);
+  const details: CanvasNodeDetail[] = [
+    { label: '类型', value: output.kind || '未标注' },
+    { label: '最近更新', value: output.updatedAt },
+    { label: '创建人', value: output.createdByName || '未记录' }
+  ];
+  if (finalized) {
+    details.push({ label: '定稿人', value: output.approvedByName });
+    details.push({ label: '定稿时间', value: output.approvedAt || '未记录' });
+  }
+
   return {
     id,
     label,
     title: output.title || emptyLabel(id),
-    summary: excerpt(body || '暂无正文，可回到工作台查看。'),
+    summary: excerpt(body || '暂无正文，可打开编辑侧栏补充。'),
     body: body || '暂无正文。',
     version: output.version,
     status: output.status,
-    statusLabel: CONTENT_STATUS_LABEL[output.status] || output.status,
+    statusLabel: finalized ? '已定稿' : CONTENT_STATUS_LABEL[output.status] || output.status,
     empty: false,
     x: position.x,
     y: position.y,
-    details: [
-      { label: '类型', value: output.kind || '未标注' },
-      { label: '最近更新', value: output.updatedAt },
-      { label: '创建人', value: output.createdByName || '未记录' }
-    ]
+    details,
+    editable: true,
+    previous: previous ? toVersionView(previous) : null,
+    finalized,
+    finalizedBy: finalized ? output.approvedByName : '',
+    finalizedAt: finalized ? output.approvedAt : null
   };
 }
 
@@ -192,7 +294,83 @@ function emptyLabel(id: 'plan' | 'wechat' | 'xhs'): string {
   return id === 'plan' ? '方案' : id === 'wechat' ? '公众号稿' : '小红书稿';
 }
 
-function buildNodes(activity: ActivityRecord, positions: Positions): CanvasNodeView[] {
+function normalizeStoredTopic(payload: StoredCanvas | null): NormalizedTopic | null {
+  const raw = payload?.topic;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const value = raw as StoredTopic;
+  const title = typeof value.title === 'string' ? value.title.trim().slice(0, TITLE_MAX) : '';
+  const direction = typeof value.direction === 'string' ? value.direction.slice(0, DIRECTION_MAX) : '';
+  const confirmedByName =
+    typeof value.confirmedByName === 'string' ? value.confirmedByName.trim().slice(0, 40) : '';
+  const confirmedAt =
+    typeof value.confirmedAt === 'string' && value.confirmedAt.trim() ? value.confirmedAt.trim() : null;
+  if (!title && !direction && !confirmedByName) return null;
+  return { title, direction, confirmedByName, confirmedAt };
+}
+
+function derivedTopic(activity: ActivityRecord): { title: string; direction: string } {
+  // ActivityInput 目前没有 topic 字段；若历史数据里存在 topic 则优先展示，否则回退活动标题。
+  const raw = activity.data as unknown as Record<string, unknown>;
+  const legacy = raw.topic as { title?: unknown; direction?: unknown } | undefined;
+  const legacyTitle = typeof legacy?.title === 'string' ? legacy.title.trim() : '';
+  const legacyDirection = typeof legacy?.direction === 'string' ? legacy.direction.trim() : '';
+  return {
+    title: legacyTitle || activity.title || '',
+    direction: legacyDirection
+  };
+}
+
+function topicState(activity: ActivityRecord, stored: NormalizedTopic | null): CanvasTopicState {
+  const derived = derivedTopic(activity);
+  return {
+    title: stored?.title || derived.title || '尚未设定主题',
+    direction: stored?.direction || derived.direction || '',
+    confirmedByName: stored?.confirmedByName ?? '',
+    confirmedAt: stored?.confirmedAt ?? null,
+    confirmed: Boolean(stored?.confirmedByName && stored?.confirmedAt),
+    stored: Boolean(stored)
+  };
+}
+
+function themeNode(activity: ActivityRecord, topic: CanvasTopicState, position: { x: number; y: number }): CanvasNodeView {
+  const summarySource = topic.direction || activity.data.highlights || '';
+  const summary = summarySource
+    ? excerpt(summarySource)
+    : topic.stored
+      ? '主题已单独设定，方向说明待补充。'
+      : '当前直接沿用活动标题作为主题，尚未单独设定主题。';
+  const details: CanvasNodeDetail[] = [
+    { label: '活动名称', value: activity.data.name || activity.title },
+    { label: '所属项目', value: activity.data.project || '未填写' },
+    { label: '主题来源', value: topic.stored ? '画布主题卡' : '活动标题' }
+  ];
+  if (topic.confirmed) {
+    details.push({ label: '确认人', value: topic.confirmedByName });
+    details.push({ label: '确认时间', value: topic.confirmedAt || '未记录' });
+  }
+
+  return {
+    id: 'theme',
+    label: CANVAS_NODE_LABELS.theme,
+    title: topic.title,
+    summary,
+    body: topic.direction || activity.data.highlights || '尚未补充主题说明。',
+    version: activity.version,
+    status: topic.confirmed ? 'confirmed' : topic.stored ? 'draft' : 'derived',
+    statusLabel: topic.confirmed ? '已确认' : topic.stored ? '已设定' : '沿用标题',
+    empty: false,
+    x: position.x,
+    y: position.y,
+    details,
+    editable: true,
+    previous: null,
+    finalized: false,
+    finalizedBy: '',
+    finalizedAt: null
+  };
+}
+
+function buildNodes(activity: ActivityRecord, positions: Positions, storedTopic: NormalizedTopic | null): CanvasNodeView[] {
   const outputs = listOutputs(activity.id);
   const tasks = listTasks(activity.id);
   const taskKindById = new Map<string, string>(tasks.map((task: TaskRecord) => [task.id, task.kind]));
@@ -203,7 +381,12 @@ function buildNodes(activity: ActivityRecord, positions: Positions): CanvasNodeV
     label: CANVAS_NODE_LABELS.schedule,
     title: data.name || activity.title || '未命名活动',
     summary: [data.date, data.location].filter(Boolean).join(' · ') || '活动时间与地点尚未填写',
-    body: [data.date && `时间：${data.date}`, data.location && `地点：${data.location}`, data.audience && `对象：${data.audience}`, data.notes && `备注：${data.notes}`]
+    body: [
+      data.date && `时间：${data.date}`,
+      data.location && `地点：${data.location}`,
+      data.audience && `对象：${data.audience}`,
+      data.notes && `备注：${data.notes}`
+    ]
       .filter(Boolean)
       .join('\n'),
     version: activity.version,
@@ -217,49 +400,36 @@ function buildNodes(activity: ActivityRecord, positions: Positions): CanvasNodeV
       { label: '地点', value: data.location || '待补充' },
       { label: '对象', value: data.audience || '待补充' },
       { label: '人数', value: extractCount(activity) }
-    ]
+    ],
+    editable: false,
+    previous: null,
+    finalized: false,
+    finalizedBy: '',
+    finalizedAt: null
   };
 
-  // ActivityInput 目前没有 topic 字段；若历史数据里存在 topic.title 则优先使用，否则回退活动标题。
-  const rawData = data as unknown as Record<string, unknown>;
-  const topic = rawData.topic as { title?: unknown } | undefined;
-  const topicTitle = typeof topic?.title === 'string' ? topic.title.trim() : '';
-  const theme: CanvasNodeView = {
-    id: 'theme',
-    label: CANVAS_NODE_LABELS.theme,
-    title: topicTitle || activity.title || '尚未设定主题',
-    summary: data.highlights
-      ? excerpt(data.highlights)
-      : topicTitle
-        ? '主题已单独设定，详细说明待补充。'
-        : '当前直接沿用活动标题作为主题，尚未单独设定主题。',
-    body: data.highlights || '尚未补充主题说明。',
-    version: activity.version,
-    status: topicTitle ? 'confirmed' : 'derived',
-    statusLabel: topicTitle ? '已设定' : '沿用标题',
-    empty: false,
-    x: positions.theme.x,
-    y: positions.theme.y,
-    details: [
-      { label: '活动名称', value: data.name || activity.title },
-      { label: '所属项目', value: data.project || '未填写' },
-      { label: '主题来源', value: topicTitle ? '活动资料 · 主题字段' : '活动标题' }
-    ]
-  };
-
-  const planOutput = pickLatest(
-    outputs.filter(
-      (item) => item.kind === 'planning' || taskKindById.get(item.taskId) === 'planning'
-    )
-  );
+  const topic = topicState(activity, storedTopic);
+  const plans = planOutputs(outputs, taskKindById);
+  const planCurrent = pickLatest(plans);
+  const wechatOutputs = platformOutputs('wechat', outputs, taskKindById);
+  const wechatCurrent = pickLatest(wechatOutputs);
+  const xhsOutputs = platformOutputs('xhs', outputs, taskKindById);
+  const xhsCurrent = pickLatest(xhsOutputs);
 
   return [
     schedule,
-    theme,
-    contentNode('plan', planOutput, positions.plan),
-    contentNode('wechat', platformOutput('wechat', outputs, taskKindById), positions.wechat),
-    contentNode('xhs', platformOutput('xhs', outputs, taskKindById), positions.xhs)
+    themeNode(activity, topic, positions.theme),
+    contentNode('plan', planCurrent, previousOf(plans, planCurrent), positions.plan),
+    contentNode('wechat', wechatCurrent, previousOf(wechatOutputs, wechatCurrent), positions.wechat),
+    contentNode('xhs', xhsCurrent, previousOf(xhsOutputs, xhsCurrent), positions.xhs)
   ];
+}
+
+/** 从活动资料里找「人数」口径：现有 ActivityInput 没有独立人数字段，只在对象/备注文本中随文出现。 */
+function extractCount(activity: ActivityRecord): string {
+  const text = `${activity.data.audience} ${activity.data.notes}`;
+  const matched = text.match(/(?:共|约|计划)\s*(\d{1,5})\s*(?:人|名)/) || text.match(/(\d{1,5})\s*(?:人|名)/);
+  return matched ? `${matched[1]} 人（资料口径）` : '资料未记录';
 }
 
 function readStored(activityId: string): { payload: StoredCanvas; updatedAt: string } | null {
@@ -315,15 +485,49 @@ function normalizeGroups(raw: unknown): CanvasGroupState[] {
   return groups;
 }
 
+interface StoredContext {
+  positions: Positions;
+  zoom: number;
+  groups: CanvasGroupState[];
+  topic: NormalizedTopic | null;
+}
+
+function storedContext(activityId: string): StoredContext {
+  const stored = readStored(activityId);
+  return {
+    positions: positionsFrom(stored?.payload ?? null),
+    zoom: zoomFrom(stored?.payload ?? null),
+    groups: stored ? normalizeGroups(stored.payload.groups) : [],
+    topic: normalizeStoredTopic(stored?.payload ?? null)
+  };
+}
+
+function writeStored(activityId: string, context: StoredContext, topic?: NormalizedTopic | null): void {
+  const payload: StoredCanvas = {
+    nodes: context.positions,
+    zoom: context.zoom,
+    groups: context.groups,
+    topic: topic ?? context.topic ?? undefined
+  };
+  getDb()
+    .prepare(
+      `INSERT INTO canvas_state (activity_id, payload, updated_at) VALUES (?, ?, ?)
+       ON CONFLICT(activity_id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`
+    )
+    .run(activityId, JSON.stringify(payload), nowIso());
+}
+
 export function getCanvasState(activityId: string): CanvasPayload | null {
   const activity = getActivity(activityId);
   if (!activity) return null;
 
   const stored = readStored(activityId);
   const positions = positionsFrom(stored?.payload ?? null);
+  const storedTopic = normalizeStoredTopic(stored?.payload ?? null);
 
   return {
-    nodes: buildNodes(activity, positions),
+    nodes: buildNodes(activity, positions, storedTopic),
+    topic: topicState(activity, storedTopic),
     zoom: zoomFrom(stored?.payload ?? null),
     groups: stored ? normalizeGroups(stored.payload.groups) : [],
     updatedAt: stored?.updatedAt ?? null,
@@ -331,7 +535,13 @@ export function getCanvasState(activityId: string): CanvasPayload | null {
   };
 }
 
-export type SaveCanvasResult = { ok: true; canvas: CanvasPayload } | { ok: false; error: string };
+function canvasOf(activityId: string): CanvasWriteResult {
+  return { ok: true, canvas: getCanvasState(activityId) as CanvasPayload };
+}
+
+function bad(error: string, status: 400 | 404 | 409 = 400): CanvasWriteResult {
+  return { ok: false, error, status };
+}
 
 function validatePosition(id: string, value: unknown): { x: number; y: number } | string {
   if (!CANVAS_NODE_IDS.includes(id as CanvasNodeId)) return `不支持的节点：${id}`;
@@ -345,49 +555,230 @@ function validatePosition(id: string, value: unknown): { x: number; y: number } 
   return { x: clampCoord(point.x), y: clampCoord(point.y) };
 }
 
-export function saveCanvasState(activityId: string, patch: unknown): SaveCanvasResult {
+/** 固定节点的写操作若显式带 nodeId，必须属于五类且与操作对象一致 */
+function validateNodeTarget(input: Record<string, unknown>, expected: CanvasNodeId): string | null {
+  if (!('nodeId' in input)) return null;
+  const value = input.nodeId;
+  if (typeof value !== 'string' || !CANVAS_NODE_IDS.includes(value as CanvasNodeId)) {
+    return `不支持的节点：${typeof value === 'string' && value ? value : '（空）'}`;
+  }
+  if (value !== expected) return `该操作只适用于「${CANVAS_NODE_LABELS[expected]}」节点`;
+  return null;
+}
+
+export function saveCanvasState(activityId: string, patch: unknown): CanvasWriteResult {
   const activity = getActivity(activityId);
-  if (!activity) return { ok: false, error: '活动不存在' };
+  if (!activity) return bad('活动不存在', 404);
 
   if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
-    return { ok: false, error: '请求内容格式不正确' };
+    return bad('请求内容格式不正确');
   }
   const input = patch as Record<string, unknown>;
 
-  const stored = readStored(activityId);
-  const positions = positionsFrom(stored?.payload ?? null);
-  let zoom = zoomFrom(stored?.payload ?? null);
-  let groups = stored ? normalizeGroups(stored.payload.groups) : [];
+  const context = storedContext(activityId);
+  let zoom = context.zoom;
+  let groups = context.groups;
 
   if ('zoom' in input) {
-    if (!isFiniteNumber(input.zoom)) return { ok: false, error: '缩放比例必须是数字' };
+    if (!isFiniteNumber(input.zoom)) return bad('缩放比例必须是数字');
     zoom = clampZoom(input.zoom);
   }
 
   if ('groups' in input) {
-    if (!Array.isArray(input.groups)) return { ok: false, error: '分组数据格式不正确' };
+    if (!Array.isArray(input.groups)) return bad('分组数据格式不正确');
     groups = normalizeGroups(input.groups);
   }
 
   if ('nodes' in input) {
     const value = input.nodes;
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
-      return { ok: false, error: '节点坐标格式不正确' };
+      return bad('节点坐标格式不正确');
     }
     for (const [id, point] of Object.entries(value as Record<string, unknown>)) {
       const result = validatePosition(id, point);
-      if (typeof result === 'string') return { ok: false, error: result };
-      positions[id as CanvasNodeId] = result;
+      if (typeof result === 'string') return bad(result);
+      context.positions[id as CanvasNodeId] = result;
     }
   }
 
-  const payload: StoredCanvas = { nodes: positions, zoom, groups };
-  getDb()
-    .prepare(
-      `INSERT INTO canvas_state (activity_id, payload, updated_at) VALUES (?, ?, ?)
-       ON CONFLICT(activity_id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`
-    )
-    .run(activityId, JSON.stringify(payload), nowIso());
+  context.zoom = zoom;
+  context.groups = groups;
+  writeStored(activityId, context);
+  return canvasOf(activityId);
+}
 
-  return { ok: true, canvas: getCanvasState(activityId) as CanvasPayload };
+export function saveCanvasTopic(actor: CanvasActor, activityId: string, input: unknown): CanvasWriteResult {
+  const activity = getActivity(activityId);
+  if (!activity) return bad('活动不存在', 404);
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return bad('请求内容格式不正确');
+  }
+
+  const body = input as Record<string, unknown>;
+  const nodeError = validateNodeTarget(body, 'theme');
+  if (nodeError) return bad(nodeError);
+  const action = typeof body.action === 'string' ? body.action : 'save';
+  const context = storedContext(activityId);
+  const stored = context.topic;
+  const hasConfirmed = Boolean(stored?.confirmedByName && stored?.confirmedAt);
+  const requestedTitle = typeof body.title === 'string' ? body.title.trim().slice(0, TITLE_MAX) : '';
+  const requestedDirection =
+    typeof body.direction === 'string' ? body.direction.slice(0, DIRECTION_MAX) : stored?.direction ?? '';
+
+  if (action === 'confirm') {
+    const title = requestedTitle || stored?.title || '';
+    if (!title) return bad('请先填写主题标题再确认');
+    if (hasConfirmed && (stored?.title !== title || stored?.direction !== requestedDirection)) {
+      return bad('主题已确认，请先解除确认再修改。', 409);
+    }
+    const next: NormalizedTopic = {
+      title,
+      direction: requestedDirection,
+      confirmedByName: actor.name,
+      confirmedAt: nowIso()
+    };
+    writeStored(activityId, context, next);
+    audit(actor, 'canvas.topic.confirm', activityId, title);
+    return canvasOf(activityId);
+  }
+
+  if (action === 'unconfirm') {
+    if (!hasConfirmed) return bad('当前主题尚未确认');
+    const next: NormalizedTopic = {
+      title: stored?.title ?? '',
+      direction: stored?.direction ?? '',
+      confirmedByName: '',
+      confirmedAt: null
+    };
+    writeStored(activityId, context, next);
+    audit(actor, 'canvas.topic.unconfirm', activityId, next.title);
+    return canvasOf(activityId);
+  }
+
+  if (action !== 'save') return bad('未知操作');
+
+  if (!requestedTitle) return bad('请填写主题标题');
+  const changed = !stored || stored.title !== requestedTitle || stored.direction !== requestedDirection;
+  if (hasConfirmed && changed && body.unconfirm !== true) {
+    return bad('主题已确认，请先解除确认再修改。', 409);
+  }
+
+  const next: NormalizedTopic = {
+    title: requestedTitle,
+    direction: requestedDirection,
+    confirmedByName: body.unconfirm === true ? '' : stored?.confirmedByName ?? '',
+    confirmedAt: body.unconfirm === true ? null : stored?.confirmedAt ?? null
+  };
+  writeStored(activityId, context, next);
+  audit(actor, 'canvas.topic.save', activityId, `${requestedTitle}${body.unconfirm === true ? ' · 已解除确认' : ''}`);
+  return canvasOf(activityId);
+}
+
+export function saveCanvasPlan(actor: CanvasActor, activityId: string, input: unknown): CanvasWriteResult {
+  const activity = getActivity(activityId);
+  if (!activity) return bad('活动不存在', 404);
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return bad('请求内容格式不正确');
+  }
+
+  const body = input as Record<string, unknown>;
+  const nodeError = validateNodeTarget(body, 'plan');
+  if (nodeError) return bad(nodeError);
+  const planBody = typeof body.body === 'string' ? body.body : '';
+  if (!planBody.trim()) return bad('请填写方案正文');
+  if (planBody.length > OUTPUT_BODY_MAX) return bad('方案正文过长（上限 40000 字）');
+
+  const topic = topicState(activity, storedContext(activityId).topic);
+  const titleInput = typeof body.title === 'string' ? body.title.trim() : '';
+  const title = (titleInput || (topic.stored ? topic.title : '') || activity.data.name || activity.title || '活动方案').slice(
+    0,
+    160
+  );
+  const planningTask = listTasks(activityId).find((task) => task.kind === 'planning' || task.outputKind === 'planning');
+
+  createOutput(actor, {
+    activityId,
+    taskId: planningTask?.id ?? '',
+    kind: 'planning',
+    title,
+    body: planBody.slice(0, OUTPUT_BODY_MAX),
+    aiMark: true
+  });
+  return canvasOf(activityId);
+}
+
+export function saveCanvasPost(actor: CanvasActor, activityId: string, input: unknown): CanvasWriteResult {
+  const activity = getActivity(activityId);
+  if (!activity) return bad('活动不存在', 404);
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return bad('请求内容格式不正确');
+  }
+
+  const body = input as Record<string, unknown>;
+  const nodeId = typeof body.nodeId === 'string' ? body.nodeId : '';
+  if (!CANVAS_NODE_IDS.includes(nodeId as CanvasNodeId)) return bad(`不支持的节点：${nodeId || '（空）'}`);
+  if (nodeId !== 'wechat' && nodeId !== 'xhs') return bad('只有公众号和小红书节点支持保存稿件');
+
+  const title = typeof body.title === 'string' ? body.title.trim() : '';
+  const content = typeof body.body === 'string' ? body.body : '';
+  if (!title) return bad('请填写标题');
+  if (!content.trim()) return bad('请填写正文');
+  if (title.length > 160) return bad('标题过长（上限 160 字）');
+  if (content.length > OUTPUT_BODY_MAX) return bad('正文过长（上限 40000 字）');
+
+  const platform = nodeId as 'wechat' | 'xhs';
+  const outputs = listOutputs(activityId);
+  const tasks = listTasks(activityId);
+  const taskKindById = new Map<string, string>(tasks.map((task: TaskRecord) => [task.id, task.kind]));
+  const current = pickLatest(platformOutputs(platform, outputs, taskKindById));
+  const taskId = current?.taskId ?? taskIdForPlatform(tasks, platform);
+
+  createOutput(actor, {
+    activityId,
+    taskId,
+    kind: platform === 'wechat' ? 'article' : 'note',
+    title,
+    body: content.slice(0, OUTPUT_BODY_MAX),
+    tags: current?.tags ?? [],
+    aiMark: true
+  });
+  return canvasOf(activityId);
+}
+
+export function finalizeCanvasNode(actor: CanvasActor, activityId: string, input: unknown): CanvasWriteResult {
+  const activity = getActivity(activityId);
+  if (!activity) return bad('活动不存在', 404);
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return bad('请求内容格式不正确');
+  }
+
+  const body = input as Record<string, unknown>;
+  const nodeId = typeof body.nodeId === 'string' ? body.nodeId : '';
+  if (!CANVAS_NODE_IDS.includes(nodeId as CanvasNodeId)) return bad(`不支持的节点：${nodeId || '（空）'}`);
+  if (nodeId !== 'wechat' && nodeId !== 'xhs') return bad('只有公众号和小红书节点支持定稿');
+  if (body.aiAck !== true) {
+    return bad('请先确认已核对标题与正文，并知悉内容可能含 AI 生成成分。');
+  }
+
+  const platform = nodeId as 'wechat' | 'xhs';
+  const outputs = listOutputs(activityId);
+  const tasks = listTasks(activityId);
+  const taskKindById = new Map<string, string>(tasks.map((task: TaskRecord) => [task.id, task.kind]));
+  const current = pickLatest(platformOutputs(platform, outputs, taskKindById));
+  if (!current) return bad('尚未生成稿件，无法定稿');
+  if (current.status === 'approved') return bad('当前版本已定稿，如需修改请编辑生成新版本。', 409);
+  if (!current.body.trim()) return bad('正文为空，不能定稿');
+
+  let result;
+  if (current.status === 'pending') {
+    result = approveOutput(actor, current.id, '画布定稿', true);
+  } else {
+    const submitted = submitOutput(actor, current.id, '画布定稿');
+    if (!submitted.ok) return bad(submitted.reason, 409);
+    result = approveOutput(actor, current.id, '画布定稿', true);
+  }
+  if (!result.ok) return bad(result.reason, 409);
+
+  audit(actor, 'canvas.finalize', current.id, `node=${nodeId} v${current.version}`);
+  return canvasOf(activityId);
 }

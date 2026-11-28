@@ -81,6 +81,13 @@ export function findUserById(id: string): PublicUser | null {
   return row ?? null;
 }
 
+/** 画布评论 @ 成员只从本地账号读取，避免出现虚构成员 */
+export function listUsers(): PublicUser[] {
+  return getDb()
+    .prepare('SELECT id, username, name FROM users ORDER BY created_at, name')
+    .all() as PublicUser[];
+}
+
 /**
  * 首次启动时准备账号：
  * 1. 配置了 SEED_USERS（格式 username:password[:姓名]，逗号分隔）则按配置创建；
