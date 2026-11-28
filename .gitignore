@@ -40,6 +40,8 @@ node_modules/
 .next/
 out/
 dist/
+# UI 组交付包中的 dist/ 是源码而非构建产物，单独放行
+!demo/ui-canvas-prototype/dist/
 coverage/
 npm-debug.log*
 yarn-debug.log*

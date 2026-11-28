@@ -33,6 +33,7 @@
 | `demo/d1-content-studio.html` | D1 攒劲内容工坊（可交互原型源文件） |
 | `demo/d2-monthly-report.html` | D2 月报工坊（可交互原型源文件） |
 | `demo/d3-progress-notice.html` | D3 青桥进度信（可交互原型源文件） |
+| `demo/ui-canvas-prototype/` | UI 组交付的「共享创作画布」单文件交互原型（2026-11-28）：排期→主题→方案→公众号/小红书五卡共编，含 `dist/` 源码、`build.cjs` 构建脚本、`model.test.cjs` 领域测试与 `DESIGN.md`/`PRODUCT.md`。直接打开其中 `C公益交互原型.html` 即可，无需安装 |
 | `demo/qa/` | 浏览器实测截图（验收证据，保留） |
 | `cgy-calibration-agent/` | **攒劲校准引擎**：从 `自我优化编排agent/calibration-agent` 复制并做 C公益 定向适配的流量监测 Agent（G1–G7 公益规则 + 合规拦截 + 账号矩阵；详见其 `README_CGY.md`）。定位：D1–D3 是「手」，它是「眼睛」——每月跑一轮，校准卡指回 D1/D2/D3 的功能位 |
 
