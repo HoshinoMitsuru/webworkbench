@@ -282,6 +282,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+.cv-ai-mark {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-size: 10px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
 .cv-node-open {
   padding: 2px 4px;
   border: none;

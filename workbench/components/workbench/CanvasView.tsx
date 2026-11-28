@@ -73,6 +73,7 @@ export default function CanvasView({ activityId, activityTitle, userName, liveMo
   const [editNotice, setEditNotice] = useState<string | null>(null);
   const [showPrevious, setShowPrevious] = useState(false);
   const [aiAck, setAiAck] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comments, setComments] = useState<CanvasCommentRecord[]>([]);
@@ -482,6 +483,47 @@ export default function CanvasView({ activityId, activityTitle, userName, liveMo
     }
   }
 
+  async function handleGenerate() {
+    if (!preview || aiGenerating) return;
+    if (!topic.confirmed) {
+      setEditError('主题尚未确认，请先在「主题」节点确认标题与方向后再生成。');
+      setEditNotice(null);
+      return;
+    }
+    setAiGenerating(true);
+    setEditError(null);
+    setEditNotice(null);
+    try {
+      const response = await fetch(`/api/activities/${activityId}/canvas/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodeId: preview.id })
+      });
+      const data = (await response.json().catch(() => null)) as
+        | { canvas?: CanvasPayload; output?: { version: number }; notices?: string[]; error?: string }
+        | null;
+      if (!response.ok) throw new Error(data?.error || '生成失败，请稍后重试。');
+      if (!data?.canvas) throw new Error('服务端返回数据异常，请稍后重试。');
+
+      const nextNodes = applyCanvas(data.canvas);
+      const generated = nextNodes.find((node) => node.id === preview.id);
+      if (generated) {
+        setDraftTitle(generated.empty ? '' : generated.title);
+        setDraftBody(generated.empty ? '' : generated.body);
+      }
+      setAiAck(false);
+      const versionText = generated && generated.version > 0 ? `第 ${generated.version} 版` : '新版本';
+      const extra = data.notices?.length ? ` ${data.notices.join(' ')}` : '';
+      setEditNotice(
+        `已生成${versionText} AI 生成草稿，未自动定稿；请核对事实后提交审核或定稿。${extra}`
+      );
+    } catch (error) {
+      setEditError(error instanceof Error ? error.message : '生成失败，请稍后重试。');
+    } finally {
+      setAiGenerating(false);
+    }
+  }
+
   async function handleSubmitComment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!commentBody.trim()) {
@@ -730,6 +772,7 @@ export default function CanvasView({ activityId, activityTitle, userName, liveMo
                 </div>
                 <footer className="cv-node-foot">
                   <span className="cv-node-version">{node.version > 0 ? `v${node.version}` : '无版本'}</span>
+                  {node.aiMark ? <span className="cv-ai-mark">AI 生成草稿</span> : null}
                   <button className="cv-node-open" type="button" onClick={() => openNode(node)}>
                     {node.editable ? '打开编辑' : '查看预览'}
                   </button>
@@ -884,6 +927,7 @@ export default function CanvasView({ activityId, activityTitle, userName, liveMo
             <div className="cv-dialog-meta">
               <span>版本 {preview.version > 0 ? `第 ${preview.version} 版` : '暂无'}</span>
               <span>状态 {preview.statusLabel}</span>
+              {preview.aiMark ? <span>AI 生成草稿 · 需审核后定稿</span> : null}
               {preview.finalized ? (
                 <span>
                   定稿 {preview.finalizedBy} · {preview.finalizedAt}
@@ -962,8 +1006,11 @@ export default function CanvasView({ activityId, activityTitle, userName, liveMo
               <>
                 {preview.empty ? (
                   <p className="cv-empty">
-                    尚未生成方案。可在下方直接撰写并保存，保存后生成第 1 版；画布的 AI 生成留待后续版本。
+                    尚未生成方案。可点「AI 生成草稿」基于活动资料与已确认主题生成第 1 版，也可在下方直接撰写。
                   </p>
+                ) : null}
+                {!topic.confirmed ? (
+                  <p className="cv-note">主题尚未确认，AI 生成前请先在「主题」节点确认标题与方向。</p>
                 ) : null}
                 <label className="cv-field">
                   <span>方案正文</span>
@@ -971,17 +1018,31 @@ export default function CanvasView({ activityId, activityTitle, userName, liveMo
                     rows={10}
                     value={draftBody}
                     maxLength={40000}
-                    disabled={editSaving}
+                    disabled={editSaving || aiGenerating}
                     placeholder="写下活动目标、对象、流程与传播重点"
                     onChange={(event) => setDraftBody(event.target.value)}
                   />
                 </label>
                 <div className="cv-actions">
-                  <button className="btn btn-sm" type="button" onClick={() => void handleSavePlan()} disabled={editSaving}>
+                  <button
+                    className="btn btn-sm"
+                    type="button"
+                    onClick={() => void handleGenerate()}
+                    disabled={editSaving || aiGenerating || !topic.confirmed}
+                  >
+                    {aiGenerating ? '生成中…' : 'AI 生成草稿'}
+                  </button>
+                  <button
+                    className="btn btn-sm"
+                    type="button"
+                    onClick={() => void handleSavePlan()}
+                    disabled={editSaving || aiGenerating}
+                  >
                     {editSaving ? '保存中…' : '保存为新版本'}
                   </button>
                   <span className="cv-muted">当前第 {preview.version} 版</span>
                 </div>
+                <p className="cv-muted">生成会新建草稿版本，不覆盖已有版本，也不会自动定稿。</p>
               </>
             ) : null}
 
@@ -990,8 +1051,11 @@ export default function CanvasView({ activityId, activityTitle, userName, liveMo
                 {preview.empty ? (
                   <p className="cv-empty">
                     {preview.id === 'wechat' ? '尚未生成公众号稿' : '尚未生成小红书稿'}
-                    。可在下方直接撰写并保存，保存后生成新版本。
+                    。确认主题后可点「AI 生成草稿」生成第 1 版，也可直接撰写并保存。
                   </p>
+                ) : null}
+                {!topic.confirmed ? (
+                  <p className="cv-note">主题尚未确认，AI 生成前请先在「主题」节点确认标题与方向。</p>
                 ) : null}
                 <label className="cv-field">
                   <span>标题</span>
@@ -999,7 +1063,7 @@ export default function CanvasView({ activityId, activityTitle, userName, liveMo
                     type="text"
                     value={draftTitle}
                     maxLength={160}
-                    disabled={editSaving}
+                    disabled={editSaving || aiGenerating}
                     onChange={(event) => setDraftTitle(event.target.value)}
                   />
                 </label>
@@ -1009,16 +1073,30 @@ export default function CanvasView({ activityId, activityTitle, userName, liveMo
                     rows={10}
                     value={draftBody}
                     maxLength={40000}
-                    disabled={editSaving}
+                    disabled={editSaving || aiGenerating}
                     onChange={(event) => setDraftBody(event.target.value)}
                   />
                 </label>
                 <div className="cv-actions">
-                  <button className="btn btn-sm" type="button" onClick={() => void handleSavePost()} disabled={editSaving}>
+                  <button
+                    className="btn btn-sm"
+                    type="button"
+                    onClick={() => void handleGenerate()}
+                    disabled={editSaving || aiGenerating || !topic.confirmed}
+                  >
+                    {aiGenerating ? '生成中…' : 'AI 生成草稿'}
+                  </button>
+                  <button
+                    className="btn btn-sm"
+                    type="button"
+                    onClick={() => void handleSavePost()}
+                    disabled={editSaving || aiGenerating}
+                  >
                     {editSaving ? '保存中…' : '保存为新版本'}
                   </button>
                   <span className="cv-muted">当前第 {preview.version} 版</span>
                 </div>
+                <p className="cv-muted">生成会结合已确认主题与最新方案新建草稿版本，不覆盖已有版本，也不会自动定稿。</p>
 
                 {preview.finalized ? (
                   <p className="cv-note">
@@ -1038,7 +1116,7 @@ export default function CanvasView({ activityId, activityTitle, userName, liveMo
                           type="checkbox"
                           checked={aiAck}
                           onChange={(event) => setAiAck(event.target.checked)}
-                          disabled={editSaving || preview.empty}
+                          disabled={editSaving || aiGenerating || preview.empty}
                         />
                         <span>我已核对标题与正文，并知悉内容可能含 AI 生成成分</span>
                       </label>
@@ -1046,7 +1124,7 @@ export default function CanvasView({ activityId, activityTitle, userName, liveMo
                         className="btn btn-sm"
                         type="button"
                         onClick={() => void handleFinalize()}
-                        disabled={!aiAck || preview.empty || editSaving}
+                        disabled={!aiAck || preview.empty || editSaving || aiGenerating}
                       >
                         {editSaving ? '定稿中…' : '定稿该版本'}
                       </button>

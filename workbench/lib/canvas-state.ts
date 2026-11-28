@@ -1,8 +1,11 @@
 import { getActivity, type ActivityRecord } from '@/lib/activities';
+import { isLiveModel } from '@/lib/ark';
 import { audit, getDb, nowIso } from '@/lib/db';
+import { blocksGeneration, listMaterials } from '@/lib/materials';
 import { approveOutput, createOutput, listOutputs, submitOutput } from '@/lib/outputs';
-import { listTasks } from '@/lib/tasks';
-import { ACTIVITY_STATUS_LABEL, CONTENT_STATUS_LABEL } from '@/lib/workflow';
+import { createTask, listTasks } from '@/lib/tasks';
+import { runTaskGeneration, type GenerationReference } from '@/lib/task-gen';
+import { ACTIVITY_STATUS_LABEL, BASE_TEMPLATES, CONTENT_STATUS_LABEL, MATERIAL_PRESETS } from '@/lib/workflow';
 import type { OutputRecord, TaskRecord } from '@/lib/workspace-types';
 
 /**
@@ -58,6 +61,8 @@ export interface CanvasNodeView {
   status: string;
   statusLabel: string;
   empty: boolean;
+  /** 该版本为 AI 生成草稿（外部审核前需明确标注） */
+  aiMark: boolean;
   x: number;
   y: number;
   details: CanvasNodeDetail[];
@@ -234,8 +239,8 @@ function contentNode(
       id === 'plan' ? '尚未生成方案' : id === 'wechat' ? '尚未生成公众号稿' : '尚未生成小红书稿';
     const hint =
       id === 'plan'
-        ? '这场活动还没有方案稿。可直接在画布中撰写并保存，保存后生成第 1 版；AI 生成仍在工作台完成。'
-        : '工作台里还没有对应平台的稿件。可直接在画布中撰写并保存为新版本；AI 生成仍在工作台完成。';
+        ? '这场活动还没有方案稿。可点「AI 生成草稿」基于活动资料与已确认主题生成第 1 版，也可直接撰写并保存。'
+        : '工作台里还没有对应平台的稿件。确认主题后可点「AI 生成草稿」生成第 1 版，也可直接撰写并保存。';
     return {
       id,
       label,
@@ -246,6 +251,7 @@ function contentNode(
       status: 'missing',
       statusLabel: '未生成',
       empty: true,
+      aiMark: false,
       x: position.x,
       y: position.y,
       details: [],
@@ -279,6 +285,7 @@ function contentNode(
     status: output.status,
     statusLabel: finalized ? '已定稿' : CONTENT_STATUS_LABEL[output.status] || output.status,
     empty: false,
+    aiMark: output.aiMark && !finalized,
     x: position.x,
     y: position.y,
     details,
@@ -359,6 +366,7 @@ function themeNode(activity: ActivityRecord, topic: CanvasTopicState, position: 
     status: topic.confirmed ? 'confirmed' : topic.stored ? 'draft' : 'derived',
     statusLabel: topic.confirmed ? '已确认' : topic.stored ? '已设定' : '沿用标题',
     empty: false,
+    aiMark: false,
     x: position.x,
     y: position.y,
     details,
@@ -393,6 +401,7 @@ function buildNodes(activity: ActivityRecord, positions: Positions, storedTopic:
     status: activity.status,
     statusLabel: ACTIVITY_STATUS_LABEL[activity.status] || activity.status,
     empty: false,
+    aiMark: false,
     x: positions.schedule.x,
     y: positions.schedule.y,
     details: [
@@ -781,4 +790,206 @@ export function finalizeCanvasNode(actor: CanvasActor, activityId: string, input
 
   audit(actor, 'canvas.finalize', current.id, `node=${nodeId} v${current.version}`);
   return canvasOf(activityId);
+}
+
+/* ---------- AI 生成 ---------- */
+
+type GeneratableNodeId = 'plan' | 'wechat' | 'xhs';
+
+/** 节点对应的既有 workflow 任务类型：方案→planning，公众号→article_recruit，小红书→note_recruit */
+const NODE_TASK_KIND: Record<GeneratableNodeId, string> = {
+  plan: 'planning',
+  wechat: 'article_recruit',
+  xhs: 'note_recruit'
+};
+
+export interface CanvasGenerateResult {
+  ok: true;
+  canvas: CanvasPayload;
+  output: { id: string; version: number; title: string; taskId: string };
+  notices: string[];
+  mode: string;
+}
+
+export type CanvasGenerateOutcome =
+  | CanvasGenerateResult
+  | { ok: false; error: string; status: 400 | 404 | 409 };
+
+function generateFail(error: string, status: 400 | 404 | 409 = 400): CanvasGenerateOutcome {
+  return { ok: false, error, status };
+}
+
+/** 从 workflow.ts 的现有模板中找生成任务定义，避免另写一套任务字段 */
+function templateOfKind(kind: string) {
+  return [...BASE_TEMPLATES, ...MATERIAL_PRESETS.flatMap((preset) => preset.templates)].find(
+    (template) => template.kind === kind
+  );
+}
+
+/**
+ * 解析节点对应的生成任务：
+ * 1) 优先复用该节点最新版本所属任务，保证版本号连续；
+ * 2) 其次复用活动流程里同类型的既有 AI 任务；
+ * 3) 都没有时，按 workflow.ts 模板补建一条真实任务并写入 audit，绝不使用空串或虚构 task_id。
+ */
+function ensureGenerateTask(
+  actor: CanvasActor,
+  activityId: string,
+  nodeId: GeneratableNodeId,
+  tasks: TaskRecord[],
+  latestTaskId: string
+): TaskRecord | null {
+  if (latestTaskId) {
+    const current = tasks.find((task) => task.id === latestTaskId);
+    if (current) return current;
+  }
+
+  const kind = NODE_TASK_KIND[nodeId];
+  let matched: TaskRecord | undefined;
+  if (nodeId === 'plan') {
+    matched = tasks.find((task) => task.kind === 'planning' || task.outputKind === 'planning');
+  } else if (nodeId === 'wechat') {
+    matched =
+      tasks.find((task) => task.kind === 'article_recruit') ??
+      tasks.find((task) => task.outputKind === 'article');
+  } else {
+    matched =
+      tasks.find((task) => task.kind === 'note_recruit') ??
+      tasks.find((task) => task.outputKind === 'note');
+  }
+  if (matched) return matched;
+
+  const template = templateOfKind(kind);
+  if (!template) return null;
+  const created = createTask(actor, activityId, {
+    title: template.title,
+    stage: template.stage,
+    kind: template.kind,
+    mode: template.mode,
+    outputKind: template.outputKind,
+    role: template.role
+  });
+  if (created) {
+    audit(
+      actor,
+      'canvas.task.ensure',
+      created.id,
+      `node=${nodeId} kind=${kind} template=${template.key}（画布生成缺少对应任务，按 workflow 模板补建）`
+    );
+  }
+  return created;
+}
+
+/**
+ * 画布节点 AI 生成：复用 runTaskGeneration（同一 prompt 构建、语气库注入、outputs/ai_runs/audit 约定）。
+ * 模型未配置时不走 demo 兜底，直接返回可读错误，避免产生半成品 output。
+ */
+export async function generateCanvasNode(
+  actor: CanvasActor,
+  activityId: string,
+  input: unknown
+): Promise<CanvasGenerateOutcome> {
+  const activity = getActivity(activityId);
+  if (!activity) return generateFail('活动不存在或已被删除', 404);
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return generateFail('请求内容格式不正确');
+  }
+
+  const body = input as Record<string, unknown>;
+  const nodeId = typeof body.nodeId === 'string' ? body.nodeId : '';
+  if (!CANVAS_NODE_IDS.includes(nodeId as CanvasNodeId)) {
+    return generateFail(`不支持的节点：${nodeId || '（空）'}`);
+  }
+  if (nodeId !== 'plan' && nodeId !== 'wechat' && nodeId !== 'xhs') {
+    return generateFail('只有方案、公众号和小红书节点支持 AI 生成');
+  }
+  const target = nodeId as GeneratableNodeId;
+
+  // 主题未确认时明确提示，不静默使用活动标题代替
+  const storedTopic = storedContext(activityId).topic;
+  const topicConfirmed = Boolean(storedTopic?.confirmedByName && storedTopic?.confirmedAt);
+  if (!storedTopic || !topicConfirmed) {
+    return generateFail(
+      '主题尚未确认。请先在「主题」节点确认主题标题与方向后再生成，避免使用未确认的内容。',
+      409
+    );
+  }
+
+  if (!isLiveModel()) {
+    return generateFail(
+      '尚未配置 AI 模型（ARK_API_KEY / ARK_MODEL），无法生成草稿。请联系内容组配置后再试；本次未生成任何版本。',
+      409
+    );
+  }
+
+  const materials = listMaterials(activityId, { id: actor.id, name: actor.name });
+  const usableMaterials = materials.filter((material) => !blocksGeneration(material));
+  const skipped = materials.length - usableMaterials.length;
+
+  const outputs = listOutputs(activityId);
+  const tasks = listTasks(activityId);
+  const taskKindById = new Map<string, string>(tasks.map((task: TaskRecord) => [task.id, task.kind]));
+  const planCurrent = pickLatest(planOutputs(outputs, taskKindById));
+  const latestNodeOutput =
+    target === 'plan'
+      ? planCurrent
+      : pickLatest(platformOutputs(target, outputs, taskKindById));
+
+  const task = ensureGenerateTask(actor, activityId, target, tasks, latestNodeOutput?.taskId ?? '');
+  if (!task) return generateFail('未能找到或补建对应的生成任务，请回工作台检查活动流程后再试。', 409);
+  if (task.mode !== 'ai') {
+    return generateFail('该节点对应的任务不是 AI 生成类型，请在任务详情中人工处理。', 409);
+  }
+
+  const notices: string[] = [];
+  if (skipped > 0) {
+    notices.push(`已跳过 ${skipped} 张未授权图片，请先在资料库补齐监护人授权或确认画面不含未成年人。`);
+  }
+
+  const references: GenerationReference[] = [];
+  if (planCurrent?.body.trim()) {
+    references.push({
+      label: target === 'plan' ? '现有方案版本' : '最新方案版本',
+      text: planCurrent.body
+    });
+  } else if (target !== 'plan') {
+    notices.push('当前还没有方案版本，本次仅基于活动资料与已确认主题生成，建议先补方案。');
+  }
+
+  try {
+    const result = await runTaskGeneration({
+      actor,
+      activity,
+      task,
+      materials: usableMaterials,
+      topic: { title: storedTopic.title, direction: storedTopic.direction },
+      references
+    });
+    notices.push(...result.notices);
+    audit(
+      actor,
+      'canvas.generate',
+      result.output.id,
+      `node=${target} task=${task.id} v${result.output.version} mode=${result.mode}`
+    );
+    return {
+      ok: true,
+      canvas: getCanvasState(activityId) as CanvasPayload,
+      output: {
+        id: result.output.id,
+        version: result.output.version,
+        title: result.output.title,
+        taskId: result.output.taskId
+      },
+      notices,
+      mode: result.mode
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message.trim() : '';
+    // 网络层异常（如 fetch failed）不是中文，统一换成可读提示；已有中文错误原样透出
+    const readable = message && /[\u4e00-\u9fa5]/.test(message)
+      ? message
+      : '模型调用失败，请稍后重试；本次未生成任何新版本。';
+    return generateFail(readable, 409);
+  }
 }

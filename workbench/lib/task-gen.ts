@@ -18,6 +18,18 @@ export interface GenerationResult {
   notices: string[];
 }
 
+/** 画布已确认主题，作为生成时的上游输入；事实仍以活动资料为准 */
+export interface GenerationTopic {
+  title: string;
+  direction: string;
+}
+
+/** 已存在的上游版本（如最新方案），只作为生成参考，不覆盖原版本 */
+export interface GenerationReference {
+  label: string;
+  text: string;
+}
+
 function factSheet(activity: ActivityInput): string {
   const line = (label: string, value: string) => `${label}：${value.trim() || '待补充'}`;
   return [
@@ -59,8 +71,26 @@ function systemPromptWithVoice(): string {
 ${voice}`;
 }
 
-function promptFor(kind: string, activity: ActivityInput, digest: string): string {
-  const base = `活动资料：\n${factSheet(activity)}${digest ? `\n\n参考资料（已脱敏）：\n${digest}` : ''}`;
+function promptFor(
+  kind: string,
+  activity: ActivityInput,
+  digest: string,
+  topic?: GenerationTopic,
+  references?: GenerationReference[]
+): string {
+  const contextParts: string[] = [];
+  if (topic) {
+    contextParts.push(`已确认主题：${topic.title.trim() || '待补充'}`);
+    if (topic.direction.trim()) contextParts.push(`主题方向：${topic.direction.trim()}`);
+  }
+  for (const reference of references ?? []) {
+    if (!reference.text.trim()) continue;
+    contextParts.push(`【${reference.label}】\n${reference.text.trim().slice(0, 8000)}`);
+  }
+  const upstream = contextParts.length
+    ? `\n\n${contextParts.join('\n\n')}\n\n（上述主题与上游内容为已确认输入，只用于把握方向与延续结构；具体事实仍以活动资料为准，不得新增资料外的事实。）`
+    : '';
+  const base = `活动资料：\n${factSheet(activity)}${digest ? `\n\n参考资料（已脱敏）：\n${digest}` : ''}${upstream}`;
 
   if (kind === 'planning') {
     return `${base}
@@ -271,6 +301,10 @@ export async function runTaskGeneration(input: {
   activity: ActivityRecord;
   task: TaskRecord;
   materials: MaterialRecord[];
+  /** 画布确认的主题；不传则维持原有工作台生成行为 */
+  topic?: GenerationTopic;
+  /** 上游版本内容（如最新方案）；只作参考，不覆盖 */
+  references?: GenerationReference[];
 }): Promise<GenerationResult> {
   const { actor, activity, task } = input;
   const notices: string[] = [];
@@ -306,6 +340,20 @@ export async function runTaskGeneration(input: {
     digestParts.push(`【${material.name}】\n${masked.text}`);
   }
   const digest = digestParts.join('\n\n').slice(0, 6000);
+
+  let topic: GenerationTopic | undefined;
+  if (input.topic) {
+    const title = maskPersonalInfo(input.topic.title);
+    const direction = maskPersonalInfo(input.topic.direction);
+    maskedTotal += title.maskedCount + direction.maskedCount;
+    topic = { title: title.text, direction: direction.text };
+  }
+  const references: GenerationReference[] = (input.references ?? []).map((reference) => {
+    const masked = maskPersonalInfo(reference.text);
+    maskedTotal += masked.maskedCount;
+    return { label: reference.label, text: masked.text };
+  });
+
   if (maskedTotal > 0) {
     notices.push(`已在送入模型前脱敏 ${maskedTotal} 处个人信息。`);
   }
@@ -321,7 +369,7 @@ export async function runTaskGeneration(input: {
       mode = 'demo';
       notices.push('当前为演示模式：结构可走通，正式使用前请配置方舟模型并用真实资料试跑。');
     } else {
-      const raw = await chatJson<Record<string, unknown>>(promptFor(task.kind, sanitizedActivity, digest), {
+      const raw = await chatJson<Record<string, unknown>>(promptFor(task.kind, sanitizedActivity, digest, topic, references), {
         system: systemPromptWithVoice()
       });
       draft = draftFromModel(task.kind, raw);
