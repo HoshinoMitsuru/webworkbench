@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { CanvasNodeId, CanvasNodeView, CanvasPayload } from '@/lib/canvas-state';
+import type { OutputSource } from '@/lib/workspace-types';
 import type { CanvasCommentField, CanvasCommentRecord, CanvasMember } from '@/lib/canvas-comments';
 import WorkbenchHeader from './WorkbenchHeader';
 
@@ -33,6 +34,11 @@ const NODE_LABELS: Record<CanvasNodeId, string> = {
   xhs: '小红书'
 };
 const COMMENT_FIELDS: CanvasCommentField[] = ['title', 'body', 'general'];
+const SOURCE_LABELS: Record<OutputSource, string> = {
+  ai: 'AI 生成草稿',
+  mixed: 'AI 初稿 · 已人工修改',
+  manual: '人工撰写'
+};
 const COMMENT_FIELD_LABELS: Record<CanvasCommentField, string> = {
   title: '标题',
   body: '正文',
@@ -772,7 +778,7 @@ export default function CanvasView({ activityId, activityTitle, userName, liveMo
                 </div>
                 <footer className="cv-node-foot">
                   <span className="cv-node-version">{node.version > 0 ? `v${node.version}` : '无版本'}</span>
-                  {node.aiMark ? <span className="cv-ai-mark">AI 生成草稿</span> : null}
+                  {node.source ? <span className="cv-ai-mark">{SOURCE_LABELS[node.source]}</span> : null}
                   <button className="cv-node-open" type="button" onClick={() => openNode(node)}>
                     {node.editable ? '打开编辑' : '查看预览'}
                   </button>
@@ -927,7 +933,7 @@ export default function CanvasView({ activityId, activityTitle, userName, liveMo
             <div className="cv-dialog-meta">
               <span>版本 {preview.version > 0 ? `第 ${preview.version} 版` : '暂无'}</span>
               <span>状态 {preview.statusLabel}</span>
-              {preview.aiMark ? <span>AI 生成草稿 · 需审核后定稿</span> : null}
+              {preview.source ? <span>{SOURCE_LABELS[preview.source]}</span> : null}
               {preview.finalized ? (
                 <span>
                   定稿 {preview.finalizedBy} · {preview.finalizedAt}

@@ -59,6 +59,9 @@ export interface MaterialRecord {
   stale: boolean;
 }
 
+/** 内容来源三态；与 ai_mark 不同，审核通过不会改变来源 */
+export type OutputSource = 'ai' | 'mixed' | 'manual';
+
 export interface OutputRecord {
   id: string;
   activityId: string;
@@ -70,7 +73,10 @@ export interface OutputRecord {
   status: string;
   adopted: boolean;
   version: number;
+  /** 未审核的 AI 内容提示；审核通过后置 false，不代表来源 */
   aiMark: boolean;
+  /** 内容来源：ai 纯模型产出 / mixed AI 初稿经人工修改 / manual 人工撰写 */
+  source: OutputSource;
   warnings: Array<{ token: string; reason: string }>;
   createdById: string;
   createdByName: string;

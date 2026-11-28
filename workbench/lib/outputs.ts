@@ -1,6 +1,6 @@
 import { audit, getDb, nowIso } from '@/lib/db';
 import { recordConfigVersion } from '@/lib/ai-config';
-import type { AiRunRecord, OutputRecord, PublishRecord, ReviewRecord } from '@/lib/workspace-types';
+import type { AiRunRecord, OutputRecord, OutputSource, PublishRecord, ReviewRecord } from '@/lib/workspace-types';
 
 interface OutputRow {
   id: string;
@@ -14,6 +14,7 @@ interface OutputRow {
   adopted: number;
   version: number;
   ai_mark: number;
+  source: string;
   warnings: string;
   created_by_id: string;
   created_by_name: string;
@@ -85,6 +86,10 @@ function parseTags(value: string): string[] {
   }
 }
 
+function parseSource(value: string): OutputSource {
+  return value === 'mixed' || value === 'manual' ? value : 'ai';
+}
+
 function parseWarnings(value: string): Array<{ token: string; reason: string }> {
   try {
     const parsed = JSON.parse(value);
@@ -110,6 +115,7 @@ function toOutput(row: OutputRow): OutputRecord {
     adopted: Boolean(row.adopted),
     version: row.version,
     aiMark: Boolean(row.ai_mark),
+    source: parseSource(row.source),
     warnings: parseWarnings(row.warnings),
     createdById: row.created_by_id,
     createdByName: row.created_by_name,
@@ -215,6 +221,8 @@ export interface CreateOutputInput {
   tags?: string[];
   warnings?: Array<{ token: string; reason: string }>;
   aiMark?: boolean;
+  /** 未传时按 aiMark 推导，保持旧调用方行为不变 */
+  source?: OutputSource;
 }
 
 export function createOutput(actor: Actor, input: CreateOutputInput): OutputRecord {
@@ -225,14 +233,16 @@ export function createOutput(actor: Actor, input: CreateOutputInput): OutputReco
     .prepare('SELECT COALESCE(MAX(version), 0) AS version FROM outputs WHERE task_id = ?')
     .get(input.taskId) as { version: number };
   const version = versionRow.version + 1;
+  const source: OutputSource = input.source ?? (input.aiMark === false ? 'manual' : 'ai');
+  const aiMark = input.aiMark ?? source !== 'manual';
 
   const transaction = db.transaction(() => {
     db.prepare('UPDATE outputs SET adopted = 0 WHERE task_id = ?').run(input.taskId);
     db.prepare(
       `INSERT INTO outputs
-        (id, activity_id, task_id, kind, title, body, tags, status, adopted, version, ai_mark, warnings,
+        (id, activity_id, task_id, kind, title, body, tags, status, adopted, version, ai_mark, source, warnings,
          created_by_id, created_by_name, approved_by_name, approved_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', 1, ?, ?, ?, ?, ?, '', NULL, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', 1, ?, ?, ?, ?, ?, ?, '', NULL, ?, ?)`
     ).run(
       id,
       input.activityId,
@@ -242,7 +252,8 @@ export function createOutput(actor: Actor, input: CreateOutputInput): OutputReco
       input.body.slice(0, 40_000),
       JSON.stringify(input.tags ?? []),
       version,
-      input.aiMark === false ? 0 : 1,
+      aiMark ? 1 : 0,
+      source,
       JSON.stringify(input.warnings ?? []),
       actor.id,
       actor.name,

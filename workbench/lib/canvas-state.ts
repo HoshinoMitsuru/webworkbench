@@ -6,7 +6,7 @@ import { approveOutput, createOutput, listOutputs, submitOutput } from '@/lib/ou
 import { createTask, listTasks } from '@/lib/tasks';
 import { runTaskGeneration, type GenerationReference } from '@/lib/task-gen';
 import { ACTIVITY_STATUS_LABEL, BASE_TEMPLATES, CONTENT_STATUS_LABEL, MATERIAL_PRESETS } from '@/lib/workflow';
-import type { OutputRecord, TaskRecord } from '@/lib/workspace-types';
+import type { OutputRecord, OutputSource, TaskRecord } from '@/lib/workspace-types';
 
 /**
  * 「共享创作画布」的服务端状态。
@@ -61,8 +61,8 @@ export interface CanvasNodeView {
   status: string;
   statusLabel: string;
   empty: boolean;
-  /** 该版本为 AI 生成草稿（外部审核前需明确标注） */
-  aiMark: boolean;
+  /** 内容来源：ai 纯模型产出 / mixed AI 初稿经人工修改 / manual 人工撰写；无版本时为 null */
+  source: OutputSource | null;
   x: number;
   y: number;
   details: CanvasNodeDetail[];
@@ -180,6 +180,11 @@ function previousOf(list: OutputRecord[], current: OutputRecord | undefined): Ou
   return sortedOutputs(list).find((item) => item.id !== current.id);
 }
 
+/** 人工保存的来源判定：上一版为 AI 初稿或混合稿时记 mixed，否则记 manual */
+function manualSaveSource(previous: OutputRecord | undefined): OutputSource {
+  return previous && (previous.source === 'ai' || previous.source === 'mixed') ? 'mixed' : 'manual';
+}
+
 /**
  * 平台成品映射依据：
  * - task-gen 落库时 output.kind = task.outputKind；workflow.ts 中公众号任务 outputKind 为 article，小红书任务为 note。
@@ -251,7 +256,7 @@ function contentNode(
       status: 'missing',
       statusLabel: '未生成',
       empty: true,
-      aiMark: false,
+      source: null,
       x: position.x,
       y: position.y,
       details: [],
@@ -285,7 +290,7 @@ function contentNode(
     status: output.status,
     statusLabel: finalized ? '已定稿' : CONTENT_STATUS_LABEL[output.status] || output.status,
     empty: false,
-    aiMark: output.aiMark && !finalized,
+    source: output.source,
     x: position.x,
     y: position.y,
     details,
@@ -366,7 +371,7 @@ function themeNode(activity: ActivityRecord, topic: CanvasTopicState, position: 
     status: topic.confirmed ? 'confirmed' : topic.stored ? 'draft' : 'derived',
     statusLabel: topic.confirmed ? '已确认' : topic.stored ? '已设定' : '沿用标题',
     empty: false,
-    aiMark: false,
+    source: null,
     x: position.x,
     y: position.y,
     details,
@@ -401,7 +406,7 @@ function buildNodes(activity: ActivityRecord, positions: Positions, storedTopic:
     status: activity.status,
     statusLabel: ACTIVITY_STATUS_LABEL[activity.status] || activity.status,
     empty: false,
-    aiMark: false,
+    source: null,
     x: positions.schedule.x,
     y: positions.schedule.y,
     details: [
@@ -703,7 +708,11 @@ export function saveCanvasPlan(actor: CanvasActor, activityId: string, input: un
     0,
     160
   );
-  const planningTask = listTasks(activityId).find((task) => task.kind === 'planning' || task.outputKind === 'planning');
+  const tasks = listTasks(activityId);
+  const planningTask = tasks.find((task) => task.kind === 'planning' || task.outputKind === 'planning');
+  const outputs = listOutputs(activityId);
+  const taskKindById = new Map<string, string>(tasks.map((task: TaskRecord) => [task.id, task.kind]));
+  const source = manualSaveSource(pickLatest(planOutputs(outputs, taskKindById)));
 
   createOutput(actor, {
     activityId,
@@ -711,7 +720,8 @@ export function saveCanvasPlan(actor: CanvasActor, activityId: string, input: un
     kind: 'planning',
     title,
     body: planBody.slice(0, OUTPUT_BODY_MAX),
-    aiMark: true
+    source,
+    aiMark: source !== 'manual'
   });
   return canvasOf(activityId);
 }
@@ -741,6 +751,7 @@ export function saveCanvasPost(actor: CanvasActor, activityId: string, input: un
   const taskKindById = new Map<string, string>(tasks.map((task: TaskRecord) => [task.id, task.kind]));
   const current = pickLatest(platformOutputs(platform, outputs, taskKindById));
   const taskId = current?.taskId ?? taskIdForPlatform(tasks, platform);
+  const source = manualSaveSource(current);
 
   createOutput(actor, {
     activityId,
@@ -749,7 +760,8 @@ export function saveCanvasPost(actor: CanvasActor, activityId: string, input: un
     title,
     body: content.slice(0, OUTPUT_BODY_MAX),
     tags: current?.tags ?? [],
-    aiMark: true
+    source,
+    aiMark: source !== 'manual'
   });
   return canvasOf(activityId);
 }
