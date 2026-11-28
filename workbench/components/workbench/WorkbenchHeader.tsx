@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 interface Props {
@@ -11,6 +12,9 @@ interface Props {
 
 export default function WorkbenchHeader({ userName, liveModel, current, right }: Props) {
   const [leaving, setLeaving] = useState(false);
+  const pathname = usePathname();
+  // 仅在单个活动页（/activity/<id>）显示画布入口；画布页自身不重复显示
+  const activityMatch = pathname ? pathname.match(/^\/activity\/([^/]+)$/) : null;
 
   async function logout() {
     setLeaving(true);
@@ -35,6 +39,9 @@ export default function WorkbenchHeader({ userName, liveModel, current, right }:
         <a className={current === 'activities' ? 'active' : ''} href="/activities">
           活动列表
         </a>
+        {activityMatch ? (
+          <a href={`/activity/${activityMatch[1]}/canvas`}>画布视图</a>
+        ) : null}
         <a className={current === 'resources' ? 'active' : ''} href="/resources">
           资源监控
         </a>

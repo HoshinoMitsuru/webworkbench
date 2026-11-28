@@ -199,6 +199,12 @@ CREATE TABLE IF NOT EXISTS poster_assets (
 
 CREATE INDEX IF NOT EXISTS idx_poster_assets_activity ON poster_assets(activity_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_poster_assets_task ON poster_assets(task_id, version DESC);
+
+CREATE TABLE IF NOT EXISTS canvas_state (
+  activity_id TEXT PRIMARY KEY,
+  payload TEXT NOT NULL DEFAULT '{}',
+  updated_at TEXT NOT NULL
+);
 `;
 
 /** SQLite 不支持 ADD COLUMN IF NOT EXISTS，启动时按需补齐旧库字段 */

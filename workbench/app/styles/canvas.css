@@ -1,0 +1,475 @@
+/* ---------- 只读画布视图 ---------- */
+
+.cv-shell {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.cv-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 18px;
+  min-height: 52px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: nowrap;
+}
+
+.cv-back {
+  white-space: nowrap;
+}
+
+.cv-bar-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cv-bar-title h1 {
+  margin: 0;
+  font-size: 16px;
+  font-family: var(--font-serif);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 30vw;
+}
+
+.cv-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--sky-soft);
+  color: var(--ink-soft);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.cv-save-state {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.cv-save-saving {
+  color: var(--accent-deep);
+}
+
+.cv-save-saved {
+  color: var(--leaf-deep);
+}
+
+.cv-save-error {
+  color: var(--danger);
+}
+
+.cv-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.cv-zoom {
+  min-width: 42px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 18px;
+  background: var(--danger-soft);
+  border-bottom: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.cv-board {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  background-color: var(--bg);
+  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.cv-board:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.cv-hint {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  z-index: 2;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--muted);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.cv-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.cv-edges {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.cv-edge {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
+
+.cv-arrow-marker path {
+  fill: var(--border-strong);
+}
+
+.cv-node {
+  position: absolute;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.cv-node:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.cv-node-schedule {
+  border-top-color: var(--sky);
+}
+
+.cv-node-theme {
+  border-top-color: var(--accent);
+}
+
+.cv-node-plan {
+  border-top-color: var(--accent-deep);
+}
+
+.cv-node-wechat {
+  border-top-color: var(--leaf);
+}
+
+.cv-node-xhs {
+  border-top-color: var(--sky);
+}
+
+.cv-node-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  cursor: grab;
+  user-select: none;
+}
+
+.cv-node-head:active {
+  cursor: grabbing;
+}
+
+.cv-node-schedule .cv-node-head {
+  background: var(--sky-soft);
+}
+
+.cv-node-theme .cv-node-head {
+  background: var(--accent-soft);
+}
+
+.cv-node-type {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+
+.cv-badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-size: 10px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.cv-badge.is-empty {
+  border: 1px dashed var(--border-strong);
+  background: var(--bg);
+  color: var(--muted);
+}
+
+.cv-node-body {
+  flex: 1;
+  padding: 12px 14px 10px;
+  cursor: pointer;
+}
+
+.cv-node-body h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.45;
+  font-family: var(--font-serif);
+  color: var(--ink);
+}
+
+.cv-node-body p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.65;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.cv-node.is-empty {
+  background: var(--surface-2);
+  box-shadow: none;
+}
+
+.cv-node.is-empty .cv-node-body h3 {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.cv-node-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 14px 9px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.cv-node-version {
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-node-open {
+  padding: 2px 4px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--accent-deep);
+  font-size: 11px;
+}
+
+.cv-node-open:hover {
+  text-decoration: underline;
+}
+
+.cv-node-open:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.cv-dialog {
+  width: min(560px, 92vw);
+  max-height: min(80vh, 720px);
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.cv-dialog::backdrop {
+  background: color-mix(in srgb, var(--ink) 35%, transparent);
+}
+
+.cv-dialog-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: inherit;
+  padding: 18px 20px 16px;
+  overflow: auto;
+}
+
+.cv-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cv-dialog-close {
+  padding: 2px 6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.cv-dialog-close:hover {
+  color: var(--ink);
+}
+
+.cv-dialog-inner h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.cv-dialog-meta {
+  display: flex;
+  gap: 14px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.cv-dialog-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px 12px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.cv-dialog-details div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cv-dialog-details dt {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.cv-dialog-details dd {
+  margin: 0;
+  font-size: 12px;
+  word-break: break-word;
+}
+
+.cv-dialog-text {
+  max-height: 40vh;
+  margin: 0;
+  overflow: auto;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.cv-dialog-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.cv-muted {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+body.cv-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+@media (max-width: 920px) {
+  .cv-shell {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .cv-bar {
+    flex-wrap: wrap;
+    row-gap: 6px;
+    padding: 10px 14px;
+  }
+
+  .cv-bar-title h1 {
+    max-width: 56vw;
+  }
+
+  .cv-zoom-controls,
+  .cv-hint {
+    display: none;
+  }
+
+  .cv-board {
+    flex: none;
+    padding: 14px;
+    overflow: visible;
+    cursor: auto;
+    touch-action: auto;
+    background-image: none;
+  }
+
+  .cv-world {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    transform: none !important;
+  }
+
+  .cv-edges {
+    display: none;
+  }
+
+  .cv-node {
+    position: static !important;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .cv-node-head {
+    cursor: default;
+  }
+
+  .cv-node-body {
+    cursor: default;
+  }
+}
